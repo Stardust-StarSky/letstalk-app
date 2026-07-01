@@ -1,0 +1,898 @@
+(function() {
+    // ============================================================
+    // 🔧 修改为您的 Worker 地址
+    // ============================================================
+    const WORKER_URL = 'https://letstalk.dengliziti.dpdns.org';
+    // ============================================================
+
+    // ---- 常量 ----
+    const LOGIN_START_HOUR = 8;
+    const LOGIN_END_HOUR = 22;
+
+    // ---- 调试面板 ----
+    const debugPanel = document.getElementById('debugPanel');
+    const debugToggle = document.getElementById('debugToggle');
+    let debugVisible = false;
+    debugToggle.addEventListener('click', () => {
+        debugVisible = !debugVisible;
+        debugPanel.classList.toggle('active', debugVisible);
+        debugToggle.textContent = debugVisible ? '🔴 关闭日志' : '🐛 调试日志';
+    });
+    function debugLog(message, type = 'info', data = null) {
+        const time = new Date().toLocaleTimeString();
+        const cls = type === 'ok' ? 'debug-ok' : type === 'warn' ? 'debug-warn' : type === 'error' ? 'debug-error' : 'debug-info';
+        let line = `<span class="debug-time">[${time}]</span> <span class="${cls}">${message}</span>`;
+        if (data) line += '\n' + JSON.stringify(data, null, 2);
+        debugPanel.innerHTML += line + '\n';
+        debugPanel.scrollTop = debugPanel.scrollHeight;
+        console.log(`[${time}] ${message}`, data || '');
+    }
+
+    // ---- 自定义确认 ----
+    let confirmCallback = null;
+    function showConfirm(title, message, callback) {
+        document.getElementById('confirmTitle').textContent = title || '提示';
+        document.getElementById('confirmMessage').textContent = message || '确定执行此操作吗？';
+        document.getElementById('customConfirm').style.display = 'flex';
+        confirmCallback = callback;
+    }
+    function hideConfirm() {
+        document.getElementById('customConfirm').style.display = 'none';
+        confirmCallback = null;
+    }
+    document.getElementById('confirmOk').addEventListener('click', () => { if (confirmCallback) confirmCallback(true); hideConfirm(); });
+    document.getElementById('confirmCancel').addEventListener('click', () => { if (confirmCallback) confirmCallback(false); hideConfirm(); });
+    document.getElementById('customConfirm').addEventListener('click', (e) => { if (e.target === e.currentTarget) { if (confirmCallback) confirmCallback(false); hideConfirm(); } });
+
+    // ---- DOM ----
+    const loginPage = document.getElementById('loginPage');
+    const mainPage = document.getElementById('mainPage');
+    const usernameInput = document.getElementById('usernameInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const kvError = document.getElementById('kvError');
+    const accountInfo = document.getElementById('accountInfo');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const myUsernameSpan = document.getElementById('myUsername');
+    const friendListContainer = document.getElementById('friendListContainer');
+    const chatArea = document.getElementById('chatArea');
+    const chatFriendName = document.getElementById('chatFriendName');
+    const messageBox = document.getElementById('messageBox');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const backBtn = document.getElementById('backBtn');
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    const addFriendBtn = document.getElementById('addFriendBtn');
+    const addFriendModal = document.getElementById('addFriendModal');
+    const friendSearchInput = document.getElementById('friendSearchInput');
+    const searchFriendBtn = document.getElementById('searchFriendBtn');
+    const searchResult = document.getElementById('searchResult');
+    const requestEntry = document.getElementById('requestEntry');
+    const requestBadge = document.getElementById('requestBadge');
+    const requestModal = document.getElementById('requestModal');
+    const requestList = document.getElementById('requestList');
+    const customMenu = document.getElementById('customMenu');
+    const menuRecall = document.getElementById('menuRecall');
+
+    // ---- 状态 ----
+    let currentUser = null;
+    let currentToken = null;
+    let currentFriend = null;
+    let friends = [];
+    let messagesCache = {};
+    let unreadMap = {};
+    let unreadCountMap = {};
+    let ws = null;
+    let reconnectTimer = null;
+    let isConnecting = false;
+    let messageIdSet = {};
+    let pollTimer = null;
+    let friendPollTimer = null;
+    let requestPollTimer = null;
+    let isUserScrolling = false;
+    let renderVersion = 0;
+    let currentRecallMsgId = null;
+
+    // ---- 工具 ----
+    function formatTime(ts) {
+        if (!ts) return '';
+        try {
+            return new Date(ts).toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        } catch { return ''; }
+    }
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    function getAvatarLetter(name) { return name.charAt(0).toUpperCase(); }
+
+    // ---- HTTP API ----
+    async function apiCall(endpoint, method = 'GET', data = null) {
+        let url = `${WORKER_URL}${endpoint}`;
+        if (method === 'GET') {
+            const separator = url.includes('?') ? '&' : '?';
+            url += `${separator}_t=${Date.now()}`;
+        }
+        const options = {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+        };
+        if (currentToken) {
+            options.headers['Authorization'] = `Bearer ${currentToken}`;
+        }
+        if (data) {
+            options.body = JSON.stringify(data);
+        }
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        options.signal = controller.signal;
+        try {
+            const resp = await fetch(url, options);
+            clearTimeout(timeoutId);
+            const result = await resp.json();
+            if (!resp.ok) {
+                throw new Error(result.error || '请求失败');
+            }
+            return result;
+        } catch (e) {
+            clearTimeout(timeoutId);
+            if (e.name === 'AbortError') {
+                throw new Error('请求超时，请检查网络');
+            }
+            throw e;
+        }
+    }
+
+    // ---- WebSocket ----
+    function connectWebSocket() {
+        if (isConnecting || (ws && ws.readyState === WebSocket.OPEN)) return;
+        isConnecting = true;
+        debugLog('🔌 连接WebSocket...', 'info');
+        try {
+            const wsUrl = WORKER_URL.replace('https://', 'wss://').replace('http://', 'ws://') + '/ws';
+            ws = new WebSocket(wsUrl);
+            ws.onopen = () => {
+                isConnecting = false;
+                debugLog('✅ WS连接成功', 'ok');
+                if (currentToken) {
+                    ws.send(JSON.stringify({ type: 'auth', token: currentToken, username: currentUser }));
+                }
+            };
+            ws.onmessage = (ev) => {
+                try {
+                    const data = JSON.parse(ev.data);
+                    debugLog(`📥 WS [${data.type}]`, 'info', data);
+                    handleWsMessage(data);
+                } catch (e) {
+                    debugLog('❌ WS解析失败: ' + e.message, 'error');
+                }
+            };
+            ws.onerror = () => { debugLog('❌ WS错误', 'error'); isConnecting = false; };
+            ws.onclose = () => {
+                debugLog('🔌 WS关闭', 'warn');
+                isConnecting = false;
+                ws = null;
+                if (currentToken) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = setTimeout(connectWebSocket, 3000);
+                }
+            };
+        } catch (e) {
+            isConnecting = false;
+            debugLog('❌ WS连接失败: ' + e.message, 'error');
+        }
+    }
+
+    // ---- 处理 WS 消息 ----
+    function handleWsMessage(data) {
+        switch (data.type) {
+            case 'auth_success':
+                debugLog('✅ WS认证成功', 'ok');
+                break;
+            case 'new_message': {
+                const msg = data.message;
+                // 处理自己的回显：替换临时消息，不额外添加
+                if (msg.from === currentUser) {
+                    debugLog('📩 收到自己的回显', 'info', msg);
+                    const friend = msg.to;
+                    const friendTrim = friend.trim();
+                    const msgs = messagesCache[friendTrim] || [];
+                    // 查找对应的临时消息（id 以 'temp_' 开头，且内容相同，时间相近）
+                    const tempIndex = msgs.findIndex(m => m.id.startsWith('temp_') && m.text === msg.text && Math.abs(m.time - msg.time) < 5000);
+                    if (tempIndex !== -1) {
+                        // 替换为真实消息
+                        const tempMsg = msgs[tempIndex];
+                        msgs[tempIndex] = msg;
+                        messageIdSet[msg.id] = true;
+                        delete messageIdSet[tempMsg.id];
+                        if (currentFriend === friendTrim) {
+                            renderMessages(friendTrim, renderVersion);
+                        }
+                        debugLog(`✅ 已替换临时消息为真实消息 (${msg.id})`, 'ok');
+                    } else {
+                        // 如果没有找到临时消息，直接添加（但理论上不应发生）
+                        if (!messagesCache[friendTrim]) messagesCache[friendTrim] = [];
+                        messagesCache[friendTrim].push(msg);
+                        messageIdSet[msg.id] = true;
+                        if (currentFriend === friendTrim) {
+                            renderMessages(friendTrim, renderVersion);
+                        }
+                    }
+                    break; // 处理完回显后不再继续
+                }
+
+                // 处理其他用户的消息
+                if (msg.from !== currentUser && msg.to !== currentUser) {
+                    return;
+                }
+                const friend = msg.from === currentUser ? msg.to : msg.from;
+                const friendTrim = friend.trim();
+                if (messageIdSet[msg.id]) return;
+                messageIdSet[msg.id] = true;
+                if (!messagesCache[friendTrim]) messagesCache[friendTrim] = [];
+                messagesCache[friendTrim].push(msg);
+                if (currentFriend === friendTrim && chatArea.classList.contains('active')) {
+                    renderMessages(friendTrim, renderVersion);
+                    if (!isUserScrolling) messageBox.scrollTop = messageBox.scrollHeight;
+                    markAsRead(friendTrim);
+                } else {
+                    if (!unreadCountMap[friendTrim]) unreadCountMap[friendTrim] = 0;
+                    unreadCountMap[friendTrim]++;
+                    unreadMap[friendTrim] = true;
+                    renderFriendList();
+                }
+                break;
+            }
+            case 'online_status': {
+                const { username, online } = data;
+                const f = friends.find(item => item.username === username);
+                if (f) { f.online = online; renderFriendList(); }
+                break;
+            }
+            case 'message_recalled': {
+                const { msgId, newText } = data;
+                debugLog(`📥 收到撤回广播: ${msgId}`, 'info');
+                let found = false;
+                for (const friend in messagesCache) {
+                    const msgs = messagesCache[friend];
+                    for (let i = 0; i < msgs.length; i++) {
+                        if (msgs[i].id === msgId) {
+                            msgs[i].text = newText || '已撤回';
+                            msgs[i].recalled = true;
+                            found = true;
+                            if (currentFriend === friend) {
+                                renderMessages(friend, renderVersion);
+                            }
+                            break;
+                        }
+                    }
+                    if (found) break;
+                }
+                // 如果未找到，可能是历史消息未加载，可尝试刷新消息列表
+                if (!found && currentFriend) {
+                    loadMessages(currentFriend, renderVersion);
+                }
+                break;
+            }
+            case 'friend_request':
+                debugLog(`📩 好友申请: ${data.from}`, 'info');
+                loadRequestCount();
+                if (requestModal.classList.contains('active')) loadRequests();
+                break;
+            case 'friend_request_processed':
+                debugLog(`📩 申请处理: ${data.from} ${data.accepted ? '同意' : '拒绝'}`, 'info');
+                loadFriends();
+                loadRequestCount();
+                if (requestModal.classList.contains('active')) loadRequests();
+                break;
+            default:
+                debugLog(`❓ 未知WS类型: ${data.type}`, 'warn');
+        }
+    }
+
+    // ---- 好友申请 ----
+    async function loadRequestCount() {
+        try {
+            const result = await apiCall('/friend/requests');
+            const count = result.requests ? result.requests.length : 0;
+            if (count > 0) { requestEntry.classList.add('show'); requestBadge.textContent = count; }
+            else { requestEntry.classList.remove('show'); }
+        } catch (e) { debugLog('❌ 获取申请数失败: ' + e.message, 'error'); }
+    }
+    async function loadRequests() {
+        try {
+            const result = await apiCall('/friend/requests');
+            const requests = result.requests || [];
+            if (requests.length === 0) { requestList.innerHTML = '<div class="empty-state">暂无申请</div>'; return; }
+            let html = '';
+            for (const req of requests) {
+                const time = formatTime(req.time);
+                html += `
+                    <div class="request-item" data-from="${req.from}">
+                        <div><strong>${escapeHtml(req.from)}</strong><br/><span style="font-size:12px;color:#94a3b8;">${time}</span></div>
+                        <div class="actions">
+                            <button class="accept" data-action="accept" title="同意">✅</button>
+                            <button class="reject" data-action="reject" title="拒绝">❌</button>
+                        </div>
+                    </div>
+                `;
+            }
+            requestList.innerHTML = html;
+            requestList.querySelectorAll('.request-item .actions button').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const item = btn.closest('.request-item');
+                    const from = item.dataset.from;
+                    const action = btn.dataset.action;
+                    await handleRequest(from, action);
+                });
+            });
+        } catch (e) {
+            debugLog('❌ 加载申请列表失败: ' + e.message, 'error');
+            requestList.innerHTML = '<div class="empty-state">加载失败</div>';
+        }
+    }
+    async function handleRequest(from, action) {
+        try {
+            const endpoint = action === 'accept' ? '/friend/accept' : '/friend/reject';
+            await apiCall(endpoint, 'POST', { from });
+            await loadRequests();
+            await loadRequestCount();
+            await loadFriends();
+        } catch (e) { alert('操作失败: ' + e.message); }
+    }
+
+    // ---- 添加好友 ----
+    function closeAddFriend() {
+        addFriendModal.classList.remove('active');
+        friendSearchInput.value = '';
+        searchResult.style.display = 'none';
+    }
+    function closeRequests() { requestModal.classList.remove('active'); }
+
+    async function searchFriend() {
+        const query = friendSearchInput.value.trim();
+        if (!query) { alert('请输入账号名'); return; }
+        try {
+            const result = await apiCall('/friend/search', 'POST', { query });
+            if (result.success) {
+                searchResult.style.display = 'block';
+                searchResult.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0;">
+                        <span>找到用户: <strong>${escapeHtml(result.username)}</strong></span>
+                        <button class="btn-primary" style="padding:4px 16px; border:none; border-radius:20px; background:#3b82f6; color:white; cursor:pointer;" id="sendRequestBtn">发送申请</button>
+                    </div>
+                `;
+                document.getElementById('sendRequestBtn').addEventListener('click', async () => {
+                    await sendFriendRequest(result.username);
+                });
+            } else {
+                searchResult.style.display = 'block';
+                searchResult.innerHTML = `<div style="color:#ef4444;">${escapeHtml(result.message)}</div>`;
+            }
+        } catch (e) { alert('搜索失败: ' + e.message); }
+    }
+    async function sendFriendRequest(to) {
+        try {
+            await apiCall('/friend/request', 'POST', { to });
+            alert('好友申请已发送');
+            closeAddFriend();
+        } catch (e) { alert('发送失败: ' + e.message); }
+    }
+
+    // ---- 轮询 ----
+    async function pollMessages() {
+        if (!currentToken || !currentFriend) return;
+        const friend = currentFriend;
+        const thisVersion = renderVersion;
+        try {
+            const result = await apiCall(`/messages?friend=${encodeURIComponent(friend)}`);
+            if (thisVersion !== renderVersion || currentFriend !== friend) return;
+            if (result.messages) {
+                const newMsgs = result.messages;
+                const oldMsgs = messagesCache[friend] || [];
+                // 合并消息：保留临时消息，添加新消息（去重）
+                const oldIds = new Set(oldMsgs.map(m => m.id));
+                // 只添加不在旧列表中的消息（且不是临时消息）
+                const addedMsgs = newMsgs.filter(m => !oldIds.has(m.id) && !m.id.startsWith('temp_'));
+                if (addedMsgs.length > 0) {
+                    // 合并：保留旧消息，追加新消息
+                    messagesCache[friend] = [...oldMsgs, ...addedMsgs];
+                    addedMsgs.forEach(msg => { if (msg.id) messageIdSet[msg.id] = true; });
+                    renderMessages(friend, thisVersion);
+                    if (!isUserScrolling) messageBox.scrollTop = messageBox.scrollHeight;
+                    markAsRead(friend);
+                }
+            }
+        } catch (e) {}
+    }
+
+    function startPolling() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(pollMessages, 1000);
+        if (friendPollTimer) clearInterval(friendPollTimer);
+        friendPollTimer = setInterval(() => {
+            if (currentToken) loadFriends().catch(e => debugLog('⚠️ 好友轮询失败: ' + e.message, 'warn'));
+        }, 3000);
+        if (requestPollTimer) clearInterval(requestPollTimer);
+        requestPollTimer = setInterval(() => {
+            if (currentToken) loadRequestCount().catch(e => debugLog('⚠️ 申请轮询失败: ' + e.message, 'warn'));
+        }, 5000);
+        debugLog('🔄 轮询启动 (消息1s, 好友3s, 申请5s)', 'ok');
+    }
+    function stopPolling() {
+        clearInterval(pollTimer); clearInterval(friendPollTimer); clearInterval(requestPollTimer);
+        pollTimer = friendPollTimer = requestPollTimer = null;
+    }
+
+    // ---- 好友列表 ----
+    async function loadFriends() {
+        debugLog('📋 加载好友列表...', 'info');
+        try {
+            const result = await apiCall('/friends');
+            if (result.friends) {
+                friends = result.friends.map(f => ({ username: f.username, online: f.online || false, unread: f.unread || false }));
+                friends.forEach(f => { if (f.unread) unreadMap[f.username] = true; });
+                renderFriendList();
+            }
+        } catch (e) {
+            debugLog('❌ 加载好友失败: ' + e.message, 'error');
+            friendListContainer.innerHTML = '<div class="empty-state">加载失败，请刷新</div>';
+        }
+    }
+
+    function renderFriendList() {
+        if (!friendListContainer) return;
+        if (friends.length === 0) {
+            friendListContainer.innerHTML = '<div class="empty-state">暂无好友，点击 "＋" 添加好友</div>';
+            return;
+        }
+        let html = '';
+        for (const f of friends) {
+            const active = (currentFriend === f.username) ? 'active' : '';
+            const onlineClass = f.online ? 'online' : '';
+            const unreadClass = unreadMap[f.username] ? 'show' : '';
+            const unreadCount = unreadCountMap[f.username] || 0;
+            const unreadHtml = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
+            const msgs = messagesCache[f.username] || [];
+            const lastMsg = msgs.length > 0 ? msgs[msgs.length-1] : null;
+            const lastText = lastMsg ? (lastMsg.from === currentUser ? '我: ' : '') + lastMsg.text : '';
+            const lastTime = lastMsg && lastMsg.time ? formatTime(lastMsg.time) : '';
+            html += `
+                <div class="friend-item ${active}" data-friend="${f.username}">
+                    <div class="avatar">
+                        ${getAvatarLetter(f.username)}
+                        <span class="online-dot ${onlineClass}"></span>
+                    </div>
+                    <div class="info">
+                        <div class="name">${escapeHtml(f.username)}</div>
+                        <div class="last-msg">${escapeHtml(lastText)}</div>
+                    </div>
+                    ${unreadHtml}
+                    <span class="time">${lastTime}</span>
+                    <span class="badge ${unreadClass}"></span>
+                </div>
+            `;
+        }
+        friendListContainer.innerHTML = html;
+        document.querySelectorAll('.friend-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const friend = el.dataset.friend;
+                selectFriend(friend);
+            });
+        });
+    }
+
+    // ---- 选择好友 ----
+    function selectFriend(friend) {
+        if (!friend) return;
+        const friendTrim = friend.trim();
+        // 清空未读计数
+        if (unreadCountMap[friendTrim]) unreadCountMap[friendTrim] = 0;
+        renderVersion++;
+        const thisVersion = renderVersion;
+        debugLog(`🔄 切换好友: ${friendTrim} (${thisVersion})`, 'info');
+        messageBox.innerHTML = '<div class="empty-state">加载中...</div>';
+        currentFriend = friendTrim;
+        unreadMap[friendTrim] = false;
+        renderFriendList();
+        chatFriendName.textContent = friendTrim;
+        chatArea.classList.add('active');
+        messagesCache[friendTrim] = [];
+        loadMessages(friendTrim, thisVersion);
+        markAsRead(friendTrim);
+    }
+
+    // ---- 加载消息（合并保留临时消息） ----
+    async function loadMessages(friend, version) {
+        if (version !== renderVersion) {
+            debugLog(`⏭️ 版本不匹配，取消加载`, 'warn');
+            return;
+        }
+        try {
+            const result = await apiCall(`/messages?friend=${encodeURIComponent(friend)}`);
+            if (version !== renderVersion) return;
+            if (result.messages) {
+                const newMsgs = result.messages;
+                const oldMsgs = messagesCache[friend] || [];
+                // 保留已有的消息（包括临时消息），合并新消息（按 ID 去重）
+                const merged = [...oldMsgs];
+                for (const msg of newMsgs) {
+                    if (!merged.some(m => m.id === msg.id)) {
+                        merged.push(msg);
+                    }
+                }
+                // 按时间排序
+                merged.sort((a, b) => a.time - b.time);
+                messagesCache[friend] = merged;
+                merged.forEach(msg => { if (msg.id) messageIdSet[msg.id] = true; });
+                renderMessages(friend, version);
+                if (merged.length > 0) messageBox.scrollTop = messageBox.scrollHeight;
+            }
+        } catch (e) {
+            debugLog('❌ 加载消息失败: ' + e.message, 'error');
+            if (version === renderVersion) messageBox.innerHTML = '<div class="empty-state">加载失败</div>';
+        }
+    }
+
+    // ---- 渲染消息（含右键撤回） ----
+    function renderMessages(friend, version) {
+        if (version !== undefined && version !== renderVersion) {
+            debugLog(`⏭️ 渲染版本不匹配 (${version} != ${renderVersion})，放弃渲染`, 'warn');
+            return;
+        }
+        if (currentFriend !== friend) return;
+        const msgs = messagesCache[friend] || [];
+        if (msgs.length === 0) {
+            messageBox.innerHTML = '<div class="empty-state">暂无消息，开始聊天吧</div>';
+            return;
+        }
+
+        function formatTimeLabel(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return '';
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            if (msgDate.getTime() === today.getTime()) return timeStr;
+            if (msgDate.getTime() === yesterday.getTime()) return '昨天 ' + timeStr;
+            if (date.getFullYear() === now.getFullYear()) return (date.getMonth()+1) + '月' + date.getDate() + '日 ' + timeStr;
+            return date.getFullYear() + '年' + (date.getMonth()+1) + '月' + date.getDate() + '日 ' + timeStr;
+        }
+
+        let html = '';
+        const fiveMinutes = 5 * 60 * 1000;
+
+        for (let i = 0; i < msgs.length; i++) {
+            const msg = msgs[i];
+            const isMe = (msg.from === currentUser);
+            const isRecalled = msg.recalled || false;
+            const textClass = isRecalled ? 'msg-text recalled' : 'msg-text';
+            const displayText = isRecalled ? (isMe ? '你撤回了一条消息' : '对方撤回了一条消息') : msg.text;
+
+            const prevTime = msgs[i-1]?.time || 0;
+            if (i === 0 || (msg.time - prevTime) > fiveMinutes) {
+                html += `<div class="time-label">${formatTimeLabel(msg.time)}</div>`;
+            }
+
+            html += `
+                <div class="msg-item ${isMe ? 'me' : ''}" data-id="${msg.id}" data-from="${msg.from}" data-time="${msg.time}">
+                    <div class="${textClass}">${escapeHtml(displayText)}</div>
+                </div>
+            `;
+        }
+
+        messageBox.innerHTML = html;
+
+        // 绑定右键事件（仅对自己的消息且5分钟内有效）
+        messageBox.querySelectorAll('.msg-item.me').forEach(el => {
+            const msgId = el.dataset.id;
+            const msgTime = parseInt(el.dataset.time);
+            const timeDiff = Date.now() - msgTime;
+            if (timeDiff < fiveMinutes) {
+                el.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    const msgs = messagesCache[friend] || [];
+                    const msg = msgs.find(m => m.id === msgId);
+                    if (msg && msg.recalled) return;
+                    currentRecallMsgId = msgId;
+                    customMenu.style.display = 'block';
+                    customMenu.style.left = Math.min(e.clientX, window.innerWidth - 120) + 'px';
+                    customMenu.style.top = Math.min(e.clientY, window.innerHeight - 50) + 'px';
+                });
+            }
+        });
+    }
+
+    // ---- 自定义菜单事件 ----
+    menuRecall.addEventListener('click', function() {
+        customMenu.style.display = 'none';
+        const msgId = currentRecallMsgId;
+        if (!msgId) return;
+        showConfirm('撤回消息', '确定撤回此消息吗？', async (ok) => {
+            if (ok) {
+                try {
+                    await apiCall('/message/recall', 'POST', { msgId });
+                    // 本地更新（等待广播）
+                } catch (e) {
+                    alert('撤回失败: ' + e.message);
+                }
+            }
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!customMenu.contains(e.target)) customMenu.style.display = 'none';
+    });
+
+    // ---- 发送消息 ----
+    async function sendMessage(text) {
+        if (!currentFriend) {
+            alert('请先选择好友');
+            return;
+        }
+        const clean = text.trim();
+        if (!clean) return;
+        const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+        const tempMsg = {
+            id: tempId,
+            from: currentUser,
+            to: currentFriend,
+            text: clean,
+            time: Date.now(),
+            read: true,
+        };
+        if (!messagesCache[currentFriend]) messagesCache[currentFriend] = [];
+        messagesCache[currentFriend].push(tempMsg);
+        messageIdSet[tempId] = true;
+        renderMessages(currentFriend, renderVersion);
+        messageBox.scrollTop = messageBox.scrollHeight;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'message', to: currentFriend, text: clean }));
+            chatInput.value = '';
+            chatInput.focus();
+        } else {
+            try {
+                await apiCall('/messages', 'POST', { to: currentFriend, text: clean });
+                await loadMessages(currentFriend);
+            } catch (e) {
+                alert('发送失败: ' + e.message);
+                const idx = messagesCache[currentFriend].findIndex(m => m.id === tempId);
+                if (idx !== -1) {
+                    messagesCache[currentFriend].splice(idx, 1);
+                    delete messageIdSet[tempId];
+                    renderMessages(currentFriend);
+                }
+            }
+        }
+    }
+
+    // ---- 标记已读 ----
+    async function markAsRead(friend) {
+        try {
+            await apiCall(`/messages/read?friend=${encodeURIComponent(friend)}`, 'POST');
+            unreadMap[friend] = false;
+            renderFriendList();
+        } catch (e) {}
+    }
+
+    // ---- 删除消息（保留，但不再使用） ----
+    async function deleteMessage(msgId) {
+        try {
+            await apiCall(`/messages?id=${msgId}`, 'DELETE');
+            if (currentFriend && messagesCache[currentFriend]) {
+                messagesCache[currentFriend] = messagesCache[currentFriend].filter(m => m.id !== msgId);
+                delete messageIdSet[msgId];
+                renderMessages(currentFriend, renderVersion);
+            }
+            await loadFriends();
+        } catch (e) {
+            alert('删除失败: ' + e.message);
+        }
+    }
+
+    // ---- 清空聊天 ----
+    function clearChat(friend) {
+        showConfirm('清空聊天记录', `确定清空与 ${friend} 的所有聊天记录吗？（仅自己可见，如果对方也清空将永久删除）`, async (result) => {
+            if (!result) return;
+            try {
+                await apiCall('/messages/clear', 'POST', { friend: friend });
+                if (currentFriend === friend) {
+                    messagesCache[friend] = [];
+                    renderMessages(friend, renderVersion);
+                }
+                await loadFriends();
+            } catch (e) {
+                alert('清空失败: ' + e.message);
+            }
+        });
+    }
+
+    // ---- 登录 ----
+    async function login(username, password) {
+        // 时间限制
+        const hour = new Date().getHours();
+        if (hour < LOGIN_START_HOUR || hour >= LOGIN_END_HOUR) {
+            loginError.textContent = `当前不在服务时间（${LOGIN_START_HOUR}:00-${LOGIN_END_HOUR}:00），请稍后再试。`;
+            loginError.classList.remove('hidden');
+            return;
+        }
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登录中...';
+        debugLog(`🔐 尝试登录: ${username}`, 'info');
+        try {
+            const result = await apiCall('/auth/login', 'POST', { username, password });
+            if (result.success) {
+                currentUser = username;
+                currentToken = result.token;
+                debugLog(`✅ 登录成功: ${username}`, 'ok');
+                loginError.classList.add('hidden');
+                loginPage.style.display = 'none';
+                mainPage.classList.add('active');
+                myUsernameSpan.textContent = currentUser;
+                connectWebSocket();
+                await loadFriends();
+                await loadRequestCount();
+                startPolling();
+                loginBtn.disabled = false;
+                loginBtn.textContent = '登 录';
+                return true;
+            } else {
+                loginError.textContent = result.error || '登录失败';
+                loginError.classList.remove('hidden');
+                debugLog(`❌ 登录失败: ${result.error}`, 'error');
+                loginBtn.disabled = false;
+                loginBtn.textContent = '登 录';
+                return false;
+            }
+        } catch (err) {
+            loginError.textContent = '网络错误: ' + err.message;
+            loginError.classList.remove('hidden');
+            debugLog(`❌ 登录异常: ${err.message}`, 'error');
+            loginBtn.disabled = false;
+            loginBtn.textContent = '登 录';
+            return false;
+        }
+    }
+
+    // ---- 登出 ----
+    async function logout() {
+        debugLog(`🚪 用户登出: ${currentUser}`, 'info');
+        stopPolling();
+        if (ws) { ws.close(); ws = null; }
+        clearTimeout(reconnectTimer);
+        try { if (currentToken) await apiCall('/auth/logout', 'POST'); } catch (e) {}
+        currentUser = null;
+        currentToken = null;
+        currentFriend = null;
+        friends = [];
+        messagesCache = {};
+        unreadMap = {};
+        unreadCountMap = {};
+        messageIdSet = {};
+        mainPage.classList.remove('active');
+        loginPage.style.display = 'flex';
+        chatArea.classList.remove('active');
+        loginError.classList.add('hidden');
+        chatInput.value = '';
+        messageBox.innerHTML = '<div class="empty-state">选择一位好友开始聊天</div>';
+        friendListContainer.innerHTML = '<div class="empty-state">加载中...</div>';
+        loadAccountInfo();
+    }
+
+    // ---- 账号信息 ----
+    async function loadAccountInfo() {
+        debugLog('📋 加载账号信息...', 'info');
+        try {
+            const result = await apiCall('/accounts/info');
+            if (result.success) {
+                accountInfo.textContent = `📋 已注册 ${result.count} / 50 个账号`;
+                kvError.classList.add('hidden');
+                loginBtn.disabled = false;
+            } else {
+                accountInfo.textContent = '⚠️ 无法加载账号信息';
+            }
+        } catch (e) {
+            const errorMsg = e.message || '';
+            if (errorMsg.includes('limit') || errorMsg.includes('exceeded')) {
+                kvError.classList.remove('hidden');
+                loginBtn.disabled = true;
+                accountInfo.textContent = '⚠️ 存储已满，今日无法使用';
+            } else {
+                accountInfo.textContent = '⚠️ 网络错误，请刷新重试';
+            }
+            debugLog(`❌ 加载账号信息异常: ${e.message}`, 'error');
+        }
+    }
+
+    // ---- 滚动检测 ----
+    messageBox.addEventListener('scroll', () => {
+        isUserScrolling = true;
+        clearTimeout(window.scrollResetTimer);
+        window.scrollResetTimer = setTimeout(() => { isUserScrolling = false; }, 5000);
+    });
+
+    // ---- 事件绑定 ----
+    loginBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        login(usernameInput.value, passwordInput.value);
+    });
+    passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); }
+    });
+    usernameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); }
+    });
+    logoutBtn.addEventListener('click', logout);
+    sendBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        sendMessage(chatInput.value);
+    });
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendBtn.click();
+        }
+    });
+    backBtn.addEventListener('click', () => {
+        chatArea.classList.remove('active');
+    });
+    clearChatBtn.addEventListener('click', () => {
+        if (currentFriend) clearChat(currentFriend);
+    });
+
+    // 添加好友
+    addFriendBtn.addEventListener('click', () => {
+        addFriendModal.classList.add('active');
+        friendSearchInput.value = '';
+        searchResult.style.display = 'none';
+        friendSearchInput.focus();
+    });
+    searchFriendBtn.addEventListener('click', searchFriend);
+    friendSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); searchFriend(); }
+    });
+    document.getElementById('closeAddFriendBtn').addEventListener('click', closeAddFriend);
+    document.getElementById('closeRequestsBtn').addEventListener('click', closeRequests);
+    addFriendModal.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeAddFriend();
+    });
+    requestModal.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeRequests();
+    });
+
+    // 好友申请入口
+    requestEntry.addEventListener('click', () => {
+        requestModal.classList.add('active');
+        loadRequests();
+    });
+
+    // 关于
+    document.getElementById('aboutBtn').addEventListener('click', () => {
+        document.getElementById('aboutModal').classList.add('active');
+    });
+    document.getElementById('closeAboutBtn').addEventListener('click', () => {
+        document.getElementById('aboutModal').classList.remove('active');
+    });
+    document.getElementById('aboutModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) document.getElementById('aboutModal').classList.remove('active');
+    });
+
+    // ---- 初始化 ----
+    debugLog('🚀 应用启动', 'ok');
+    loginPage.style.display = 'flex';
+    mainPage.classList.remove('active');
+    loadAccountInfo();
+
+    window.addEventListener('beforeunload', () => {
+        stopPolling();
+        if (ws) ws.close();
+        clearTimeout(reconnectTimer);
+    });
+})();

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <link rel="stylesheet" href="styles.css">
+    <title>即时聊天 · 好友版</title>
+</head>
+<body>
+
+<!-- 调试面板 -->
+<div id="debugPanel"></div>
+<button id="debugToggle">🐛 调试日志</button>
+
+<div id="app">
+    <!-- 登录界面 -->
+    <div id="loginPage">
+        <h1>💬 即时聊天 <small>· 测试版 t1.1.2</small></h1>
+        <div class="login-form">
+            <label>账号 <input type="text" id="usernameInput" placeholder="请输入账号" autocomplete="off" /></label>
+            <label>密码 <input type="password" id="passwordInput" placeholder="请输入密码" autocomplete="new-password" /></label>
+            <button class="btn" id="loginBtn">登 录</button>
+            <div id="loginError" class="error-msg hidden"></div>
+            <div id="kvError" class="error-msg hidden" style="background:#fee2e2; color:#b91c1c;">⚠️ 服务器存储已达上限，请稍后重试。</div>
+            <div class="account-info" id="accountInfo">加载账号信息...</div>
+        </div>
+    </div>
+
+    <!-- 自定义确认对话框 -->
+    <div id="customConfirm">
+        <div class="box">
+            <div class="title" id="confirmTitle">提示</div>
+            <div class="message" id="confirmMessage">确定执行此操作吗？</div>
+            <div class="row">
+                <button class="cancel" id="confirmCancel">取消</button>
+                <button class="ok" id="confirmOk">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加好友模态框 -->
+    <div class="modal-overlay" id="addFriendModal">
+        <div class="modal-box">
+            <h3>添加好友</h3>
+            <input type="text" id="friendSearchInput" placeholder="输入对方账号名" />
+            <div style="font-size:13px; color:#94a3b8; margin:-8px 0 12px 0;">提示：输入对方账号名</div>
+            <div class="btn-row">
+                <button class="btn-secondary" id="closeAddFriendBtn">取消</button>
+                <button class="btn-primary" id="searchFriendBtn">搜索</button>
+            </div>
+            <div id="searchResult" style="margin-top:12px; display:none;"></div>
+        </div>
+    </div>
+
+    <!-- 好友申请列表模态框 -->
+    <div class="modal-overlay" id="requestModal">
+        <div class="modal-box">
+            <h3>好友申请</h3>
+            <div id="requestList"><div class="empty-state">暂无申请</div></div>
+            <div class="btn-row" style="margin-top:12px;">
+                <button class="btn-secondary" id="closeRequestsBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关于模态框 -->
+    <div class="modal-overlay" id="aboutModal">
+        <div class="modal-box">
+            <h3>关于</h3>
+            <div style="margin:12px 0; line-height:1.8;">
+                <p><strong>版本：测试版 t1.1.1</strong></p>
+                <p>更新内容：</p>
+                <ul style="padding-left:20px; color:#475569;">
+                    <li>尝试修复时间显示“undefined”的问题</li>
+                </ul>
+                <p style="margin-top:12px; color:#94a3b8;">© 2026 即时聊天</p>
+            </div>
+            <div class="btn-row">
+                <button class="btn-secondary" id="closeAboutBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="mainPage">
+        <div id="friendList">
+            <div class="header">
+                <div class="left">
+                    <h2>👥 好友</h2>
+                    <button class="add-btn" id="aboutBtn" style="background:#64748b; padding:4px 12px;">关于</button>
+                    <button class="add-btn" id="addFriendBtn">＋</button>
+                </div>
+                <div class="user-info">
+                    <span id="myUsername">用户</span>
+                    <button class="logout-btn" id="logoutBtn">退出</button>
+                </div>
+            </div>
+            <!-- 好友申请入口 -->
+            <div id="requestEntry">
+                <span>📩 好友申请</span>
+                <span class="badge" id="requestBadge">0</span>
+            </div>
+            <div class="list" id="friendListContainer"><div class="empty-state">加载中...</div></div>
+        </div>
+        <div id="chatArea">
+            <div class="chat-header">
+                <button class="back-btn" id="backBtn">‹</button>
+                <span class="friend-name" id="chatFriendName">选择好友</span>
+                <div class="actions">
+                    <button id="clearChatBtn" title="清空聊天记录（仅自己）">🗑️</button>
+                </div>
+            </div>
+            <div class="message-box" id="messageBox"><div class="empty-state">选择一位好友开始聊天</div></div>
+            <div class="input-area">
+                <input type="text" id="chatInput" placeholder="输入消息..." maxlength="200" autocomplete="off" />
+                <button class="btn-send" id="sendBtn">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义右键菜单 -->
+    <div id="customMenu">
+        <div class="menu-item" id="menuRecall">撤回</div>
+    </div>
+</div>
+
+<script src="javascript.js"></script>
+</body>
+</html>
