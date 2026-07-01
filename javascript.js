@@ -9,26 +9,11 @@
     const LOGIN_START_HOUR = 8;
     const LOGIN_END_HOUR = 22;
 
-    // ---- 调试面板（双击页面空白处切换） ----
-    const debugPanel = document.getElementById('debugPanel');
-    let debugVisible = false;
-    // 双击页面切换调试面板
-    document.addEventListener('dblclick', function(e) {
-        // 排除输入框、按钮等交互元素
-        const tag = e.target.tagName.toLowerCase();
-        if (tag === 'input' || tag === 'button' || tag === 'textarea') return;
-        debugVisible = !debugVisible;
-        debugPanel.classList.toggle('active', debugVisible);
-    });
-
+    // ---- 调试日志（仅控制台） ----
     function debugLog(message, type = 'info', data = null) {
         const time = new Date().toLocaleTimeString();
-        const cls = type === 'ok' ? 'debug-ok' : type === 'warn' ? 'debug-warn' : type === 'error' ? 'debug-error' : 'debug-info';
-        let line = `<span class="debug-time">[${time}]</span> <span class="${cls}">${message}</span>`;
-        if (data) line += '\n' + JSON.stringify(data, null, 2);
-        debugPanel.innerHTML += line + '\n';
-        debugPanel.scrollTop = debugPanel.scrollHeight;
-        console.log(`[${time}] ${message}`, data || '');
+        const prefix = type === 'ok' ? '✅' : type === 'warn' ? '⚠️' : type === 'error' ? '❌' : '📌';
+        console.log(`[${time}] ${prefix} ${message}`, data || '');
     }
 
     // ---- 自定义确认 ----
