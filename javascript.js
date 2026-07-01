@@ -783,7 +783,7 @@
             const result = await apiCall('/accounts/info');
             if (result.success) {
                 // 加载完成后显示欢迎信息
-                accountInfo.textContent = '欢迎使用即时聊天';
+                accountInfo.textContent = '欢迎使用 Nexus';
                 kvError.classList.add('hidden');
                 loginBtn.disabled = false;
             } else {
