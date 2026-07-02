@@ -224,15 +224,6 @@
                 }
                 break;
             }
-            case 'online_status': {
-                const { username, online } = data;
-                const f = friends.find(item => item.username === username);
-                if (f) {
-                    f.online = online;
-                    renderFriendList();
-                }
-                break;
-            }
             case 'message_recalled': {
                 const { msgId, newText } = data;
                 debugLog(`📥 收到撤回广播: ${msgId}`, 'info');
@@ -387,7 +378,7 @@
         if (friendPollTimer) clearInterval(friendPollTimer);
         friendPollTimer = setInterval(() => {
             if (currentToken) loadFriends().catch(e => debugLog('⚠️ 好友轮询失败: ' + e.message, 'warn'));
-        }, 3000);
+        }, 1000);
         if (requestPollTimer) clearInterval(requestPollTimer);
         requestPollTimer = setInterval(() => {
             if (currentToken) loadRequestCount().catch(e => debugLog('⚠️ 申请轮询失败: ' + e.message, 'warn'));
@@ -404,14 +395,15 @@
         debugLog('📋 加载好友列表...', 'info');
         try {
             const result = await apiCall('/friends');
-            if (result.friends) {
-                // 完全使用后端返回的online状态
+            if (result.friends && Array.isArray(result.friends)) {
                 friends = result.friends.map(f => ({
                     username: f.username,
-                    online: f.online || false,
                     unread: f.unread || false
                 }));
                 renderFriendList();
+            } else {
+                debugLog('❌ 好友列表数据格式错误', 'error');
+                friendListContainer.innerHTML = '<div class="empty-state">数据异常，请刷新</div>';
             }
         } catch (e) {
             debugLog('❌ 加载好友失败: ' + e.message, 'error');
@@ -428,7 +420,6 @@
         let html = '';
         for (const f of friends) {
             const active = (currentFriend === f.username) ? 'active' : '';
-            const onlineClass = f.online ? 'online' : '';
             const unreadCount = unreadCountMap[f.username] || 0;
             const unreadHtml = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
             const msgs = messagesCache[f.username] || [];
@@ -439,7 +430,6 @@
                 <div class="friend-item ${active}" data-friend="${f.username}">
                     <div class="avatar">
                         ${getAvatarLetter(f.username)}
-                        <span class="online-dot ${onlineClass}"></span>
                     </div>
                     <div class="info">
                         <div class="name">${escapeHtml(f.username)}</div>
