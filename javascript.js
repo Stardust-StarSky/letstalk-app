@@ -81,6 +81,7 @@
     let isUserScrolling = false;
     let renderVersion = 0;
     let currentRecallMsgId = null;
+    let onlineStatusMap = {};
 
     // ---- 工具 ----
     function formatTime(ts) {
@@ -144,6 +145,9 @@
             ws.onopen = () => {
                 isConnecting = false;
                 debugLog('✅ WS连接成功', 'ok');
+                // 连接成功后，所有好友标记为在线
+                friends.forEach(f => { onlineStatusMap[f.username] = true; });
+                renderFriendList();
                 if (currentToken) {
                     ws.send(JSON.stringify({ type: 'auth', token: currentToken, username: currentUser }));
                 }
@@ -162,6 +166,9 @@
                 debugLog('🔌 WS关闭', 'warn');
                 isConnecting = false;
                 ws = null;
+                // 断开后，所有好友标记为离线
+                friends.forEach(f => { onlineStatusMap[f.username] = false; });
+                renderFriendList();
                 if (currentToken) {
                     clearTimeout(reconnectTimer);
                     reconnectTimer = setTimeout(connectWebSocket, 3000);
@@ -235,10 +242,12 @@
             }
             case 'online_status': {
                 const { username, online } = data;
+                // 更新独立维护的在线状态
+                onlineStatusMap[username] = online;
                 const f = friends.find(item => item.username === username);
-                if (f) { 
-                    f.online = online; 
-                    renderFriendList(); 
+                if (f) {
+                    f.online = online;
+                    renderFriendList();
                 }
                 break;
             }
@@ -424,14 +433,13 @@
         try {
             const result = await apiCall('/friends');
             if (result.friends) {
-                friends = result.friends.map(f => ({ 
-                    username: f.username, 
-                    online: f.online || false, 
-                    unread: f.unread || false 
+                friends = result.friends.map(f => ({
+                    username: f.username,
+                    online: onlineStatusMap[f.username] !== undefined ? onlineStatusMap[f.username] : false,
+                    unread: f.unread || false
                 }));
-                // 不要覆盖已有的 unreadMap
-                friends.forEach(f => { 
-                    if (f.unread) unreadMap[f.username] = true; 
+                friends.forEach(f => {
+                    if (f.unread) unreadMap[f.username] = true;
                 });
                 renderFriendList();
             }
@@ -715,12 +723,12 @@
     // ---- 登录 ----
     async function login(username, password) {
         // 时间限制
-        /*const hour = new Date().getHours();
+        const hour = new Date().getHours();
         if (hour < LOGIN_START_HOUR || hour >= LOGIN_END_HOUR) {
             loginError.textContent = `当前不在服务时间（${LOGIN_START_HOUR}:00-${LOGIN_END_HOUR}:00），请稍后再试。`;
             loginError.classList.remove('hidden');
             return;
-        }*/
+        }
         loginBtn.disabled = true;
         loginBtn.textContent = '登录中...';
         debugLog(`🔐 尝试登录: ${username}`, 'info');
