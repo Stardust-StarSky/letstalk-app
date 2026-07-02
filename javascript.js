@@ -6,7 +6,7 @@
     // ============================================================
 
     // ---- 常量 ----
-    const LOGIN_START_HOUR = 8;
+    const LOGIN_START_HOUR = 7;
     const LOGIN_END_HOUR = 22;
 
     // ---- 调试日志 ----
@@ -80,6 +80,8 @@
     let isUserScrolling = false;
     let renderVersion = 0;
     let currentRecallMsgId = null;
+    let isAtBottom = true;              // 当前是否在底部
+    let pendingNewMessages = 0;         // 待显示的未读新消息条数
 
     // ---- 工具 ----
     function formatTime(ts) {
@@ -94,6 +96,21 @@
         return div.innerHTML;
     }
     function getAvatarLetter(name) { return name.charAt(0).toUpperCase(); }
+    function showNewMessageHint(count) {
+        const hint = document.getElementById('newMsgHint');
+        const countEl = document.getElementById('newMsgCount');
+        if (count > 0) {
+            countEl.textContent = count;
+            hint.style.display = 'block';
+        } else {
+            hint.style.display = 'none';
+        }
+    }
+
+    function hideNewMessageHint() {
+        document.getElementById('newMsgHint').style.display = 'none';
+        pendingNewMessages = 0;
+    }
 
     // ---- HTTP API ----
     async function apiCall(endpoint, method = 'GET', data = null) {
@@ -185,8 +202,7 @@
                 break;
             case 'new_message': {
                 const msg = data.message;
-                
-                // 处理自己的回显（直接添加）
+                // 处理自己的回显（直接添加，不提示）
                 if (msg.from === currentUser) {
                     debugLog('📩 收到自己的回显', 'info', msg);
                     const friend = msg.to;
@@ -197,8 +213,11 @@
                         messageIdSet[msg.id] = true;
                         if (currentFriend === friendTrim) {
                             renderMessages(friendTrim, renderVersion);
+                            // 自己发送的消息强制滚动到底部
+                            messageBox.scrollTop = messageBox.scrollHeight;
+                            isAtBottom = true;
+                            hideNewMessageHint();
                         }
-                        debugLog(`✅ 已添加自己的消息 (${msg.id})`, 'ok');
                     }
                     break;
                 }
@@ -213,11 +232,20 @@
                 messageIdSet[msg.id] = true;
                 if (!messagesCache[friendTrim]) messagesCache[friendTrim] = [];
                 messagesCache[friendTrim].push(msg);
+
+                // 如果是当前聊天界面
                 if (currentFriend === friendTrim && chatArea.classList.contains('active')) {
                     renderMessages(friendTrim, renderVersion);
-                    if (!isUserScrolling) messageBox.scrollTop = messageBox.scrollHeight;
-                    markAsRead(friendTrim);
+                    if (isAtBottom) {
+                        // 在底部 → 自动滚动
+                        messageBox.scrollTop = messageBox.scrollHeight;
+                    } else {
+                        // 不在底部 → 累加提示
+                        pendingNewMessages++;
+                        showNewMessageHint(pendingNewMessages);
+                    }
                 } else {
+                    // 不在当前聊天 → 增加未读计数（红点）
                     if (!unreadCountMap[friendTrim]) unreadCountMap[friendTrim] = 0;
                     unreadCountMap[friendTrim]++;
                     renderFriendList();
@@ -365,7 +393,12 @@
                     messagesCache[friend] = [...oldMsgs, ...addedMsgs];
                     addedMsgs.forEach(msg => { if (msg.id) messageIdSet[msg.id] = true; });
                     renderMessages(friend, thisVersion);
-                    if (!isUserScrolling) messageBox.scrollTop = messageBox.scrollHeight;
+                    if (isAtBottom) {
+                        messageBox.scrollTop = messageBox.scrollHeight;
+                    } else {
+                        pendingNewMessages += addedMsgs.length;
+                        showNewMessageHint(pendingNewMessages);
+                    }
                     markAsRead(friend);
                 }
             }
@@ -451,6 +484,10 @@
 
     // ---- 选择好友 ----
     function selectFriend(friend) {
+        // 切换好友时重置新消息提示
+        pendingNewMessages = 0;
+        hideNewMessageHint();
+        isAtBottom = true;
         if (!friend) return;
         const friendTrim = friend.trim();
         if (unreadCountMap[friendTrim]) unreadCountMap[friendTrim] = 0;
@@ -467,7 +504,7 @@
         markAsRead(friendTrim);
     }
 
-    // ---- 加载消息 ----
+    // ---- 加载消息 ----（调用 renderMessages 时传入 animate = true）
     async function loadMessages(friend, version) {
         if (version !== renderVersion) {
             debugLog(`⏭️ 版本不匹配，取消加载`, 'warn');
@@ -488,7 +525,8 @@
                 merged.sort((a, b) => a.time - b.time);
                 messagesCache[friend] = merged;
                 merged.forEach(msg => { if (msg.id) messageIdSet[msg.id] = true; });
-                renderMessages(friend, version);
+                // ✅ 传入 true，表示初次加载有动画
+                renderMessages(friend, version, true);
                 if (merged.length > 0) messageBox.scrollTop = messageBox.scrollHeight;
             }
         } catch (e) {
@@ -498,7 +536,7 @@
     }
 
     // ---- 渲染消息 ----
-    function renderMessages(friend, version) {
+    function renderMessages(friend, version, animate = false) {
         if (version !== undefined && version !== renderVersion) {
             debugLog(`⏭️ 渲染版本不匹配 (${version} != ${renderVersion})，放弃渲染`, 'warn');
             return;
@@ -541,8 +579,10 @@
                 html += `<div class="time-label">${formatTimeLabel(msg.time)}</div>`;
             }
 
+            // ✅ 根据 animate 参数决定是否添加 no-animation 类
+            const animationClass = animate ? '' : 'no-animation';
             html += `
-                <div class="msg-item ${isMe ? 'me' : ''}" data-id="${msg.id}" data-from="${msg.from}" data-time="${msg.time}">
+                <div class="msg-item ${isMe ? 'me' : ''} ${animationClass}" data-id="${msg.id}" data-from="${msg.from}" data-time="${msg.time}">
                     <div class="${textClass}">${escapeHtml(displayText)}</div>
                 </div>
             `;
@@ -612,7 +652,6 @@
             try {
                 const result = await apiCall('/messages', 'POST', { to: currentFriend, text: clean });
                 if (result.success) {
-                    // HTTP 成功，直接添加消息（因为没有回显）
                     const newMsg = {
                         id: result.id,
                         from: currentUser,
@@ -626,6 +665,9 @@
                     messageIdSet[newMsg.id] = true;
                     renderMessages(currentFriend, renderVersion);
                     messageBox.scrollTop = messageBox.scrollHeight;
+                    // ✅ 添加这两行，确保状态重置
+                    hideNewMessageHint();
+                    isAtBottom = true;
                 } else {
                     throw new Error(result.error || '发送失败');
                 }
@@ -745,37 +787,71 @@
         loadAccountInfo();
     }
 
-    // ---- 账号信息 ----
+    // ---- 账号信息（进入页面时检查时间和KV状态） ----
     async function loadAccountInfo() {
         debugLog('📋 加载账号信息...', 'info');
         accountInfo.textContent = '加载中...';
+
+        // 1. 先检查时间限制（8:00-22:00）
+        const hour = new Date().getHours();
+        if (hour < LOGIN_START_HOUR || hour >= LOGIN_END_HOUR) {
+            // 显示时间限制错误，禁用登录按钮
+            loginError.textContent = `⏰ 当前不在服务时间（${LOGIN_START_HOUR}:00-${LOGIN_END_HOUR}:00），请稍后再试。`;
+            loginError.classList.remove('hidden');
+            loginBtn.disabled = true;
+            accountInfo.textContent = `⏰ ${LOGIN_START_HOUR}:00-${LOGIN_END_HOUR}:00 服务`;
+            debugLog(`⏰ 不在服务时间，登录已禁用`, 'warn');
+            return; // 直接返回，不再请求API
+        }
+
+        // 2. 时间允许，尝试获取账号信息（检查KV状态）
         try {
             const result = await apiCall('/accounts/info');
             if (result.success) {
                 accountInfo.textContent = '欢迎使用 Nexus';
                 kvError.classList.add('hidden');
+                loginError.classList.add('hidden');
                 loginBtn.disabled = false;
+                debugLog('✅ 账号信息加载成功，登录已启用', 'ok');
             } else {
                 accountInfo.textContent = '⚠️ 加载失败，请刷新';
+                loginBtn.disabled = true;
             }
         } catch (e) {
             const errorMsg = e.message || '';
             if (errorMsg.includes('limit') || errorMsg.includes('exceeded')) {
+                // KV 超额提示
                 kvError.classList.remove('hidden');
                 loginBtn.disabled = true;
+                // 计算第二天日期
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const dateStr = tomorrow.getFullYear() + '年' + (tomorrow.getMonth() + 1) + '月' + tomorrow.getDate() + '日';
+                kvError.textContent = '⚠️ 服务器存储已达上限，请 ' + dateStr + ' 后重试。';
                 accountInfo.textContent = '⚠️ 存储已满，今日无法使用';
+                debugLog('❌ KV 超额，登录已禁用', 'error');
             } else {
+                // 其他网络错误
                 accountInfo.textContent = '⚠️ 网络错误，请刷新重试';
+                loginBtn.disabled = false; // 网络错误可重试
+                debugLog(`❌ 加载账号信息异常: ${e.message}`, 'error');
             }
-            debugLog(`❌ 加载账号信息异常: ${e.message}`, 'error');
         }
     }
 
     // ---- 滚动检测 ----
     messageBox.addEventListener('scroll', () => {
-        isUserScrolling = true;
-        clearTimeout(window.scrollResetTimer);
-        window.scrollResetTimer = setTimeout(() => { isUserScrolling = false; }, 5000);
+        // 判断是否在底部（距底部 50px 内视为底部）
+        const threshold = 50;
+        const atBottom = messageBox.scrollHeight - messageBox.scrollTop - messageBox.clientHeight < threshold;
+        if (atBottom) {
+            // 滚动到底部时，清除新消息提示
+            pendingNewMessages = 0;
+            document.getElementById('newMsgHint').style.display = 'none';
+            isAtBottom = true;
+        } else {
+            isAtBottom = false;
+        }
     });
 
     // ---- 事件绑定 ----
@@ -839,6 +915,12 @@
     });
     document.getElementById('aboutModal').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) document.getElementById('aboutModal').classList.remove('active');
+    });
+    document.getElementById('newMsgBtn').addEventListener('click', () => {
+        // 滚动到底部
+        messageBox.scrollTop = messageBox.scrollHeight;
+        hideNewMessageHint();
+        isAtBottom = true;
     });
 
     // ---- 初始化 ----

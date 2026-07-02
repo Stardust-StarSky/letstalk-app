@@ -79,6 +79,7 @@ body { background:#f0f2f5; height:100vh; display:flex; justify-content:center; a
     background: white;
     box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     border: 1px solid #eef2f6;
+    animation: fadeIn 0.2s ease;
 }
 .msg-item.me {
     align-self: flex-end;
@@ -93,6 +94,10 @@ body { background:#f0f2f5; height:100vh; display:flex; justify-content:center; a
 .msg-item .msg-text.recalled {
     color: #94a3b8;
     font-style: italic;
+}
+/* 无动画版本（用于刷新消息） */
+.msg-item.no-animation {
+    animation: none;
 }
 
 @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
