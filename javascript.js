@@ -9,7 +9,7 @@
     const LOGIN_START_HOUR = 8;
     const LOGIN_END_HOUR = 22;
 
-    // ---- 调试日志（仅控制台） ----
+    // ---- 调试日志 ----
     function debugLog(message, type = 'info', data = null) {
         const time = new Date().toLocaleTimeString();
         const prefix = type === 'ok' ? '✅' : type === 'warn' ? '⚠️' : type === 'error' ? '❌' : '📌';
@@ -69,7 +69,6 @@
     let currentFriend = null;
     let friends = [];
     let messagesCache = {};
-    let unreadMap = {};
     let unreadCountMap = {};
     let ws = null;
     let reconnectTimer = null;
@@ -147,7 +146,7 @@
                 if (currentToken) {
                     ws.send(JSON.stringify({ type: 'auth', token: currentToken, username: currentUser }));
                 }
-                // 连接成功后，刷新好友列表（更新在线状态）
+                // 连接成功后刷新好友列表
                 loadFriends();
             };
             ws.onmessage = (ev) => {
@@ -164,7 +163,7 @@
                 debugLog('🔌 WS关闭', 'warn');
                 isConnecting = false;
                 ws = null;
-                // 断开后刷新好友列表（更新在线状态为离线）
+                // 断开后刷新好友列表
                 loadFriends();
                 if (currentToken) {
                     clearTimeout(reconnectTimer);
@@ -182,15 +181,16 @@
         switch (data.type) {
             case 'auth_success':
                 debugLog('✅ WS认证成功', 'ok');
-                loadFriends(); // 认证成功后刷新好友列表
+                loadFriends();
                 break;
             case 'new_message': {
                 const msg = data.message;
-                // ⭐ 关键修复：忽略自己的回显，避免重复
+                // 【关键】完全忽略自己的回显
                 if (msg.from === currentUser) {
                     debugLog('⏭️ 忽略自己的回显', 'info');
                     return;
                 }
+                // 只处理与自己相关的消息
                 if (msg.from !== currentUser && msg.to !== currentUser) {
                     return;
                 }
@@ -207,7 +207,6 @@
                 } else {
                     if (!unreadCountMap[friendTrim]) unreadCountMap[friendTrim] = 0;
                     unreadCountMap[friendTrim]++;
-                    unreadMap[friendTrim] = true;
                     renderFriendList();
                 }
                 break;
@@ -224,24 +223,18 @@
             case 'message_recalled': {
                 const { msgId, newText } = data;
                 debugLog(`📥 收到撤回广播: ${msgId}`, 'info');
-                let found = false;
                 for (const friend in messagesCache) {
                     const msgs = messagesCache[friend];
                     for (let i = 0; i < msgs.length; i++) {
                         if (msgs[i].id === msgId) {
                             msgs[i].text = newText || '已撤回';
                             msgs[i].recalled = true;
-                            found = true;
                             if (currentFriend === friend) {
                                 renderMessages(friend, renderVersion);
                             }
                             break;
                         }
                     }
-                    if (found) break;
-                }
-                if (!found && currentFriend) {
-                    loadMessages(currentFriend, renderVersion);
                 }
                 break;
             }
@@ -393,29 +386,18 @@
         pollTimer = friendPollTimer = requestPollTimer = null;
     }
 
-    // ---- 好友列表 ----
+    // ---- 好友列表（核心修复：在线状态由WebSocket控制） ----
     async function loadFriends() {
         debugLog('📋 加载好友列表...', 'info');
         try {
             const result = await apiCall('/friends');
             if (result.friends) {
-                const wsConnected = ws && ws.readyState === WebSocket.OPEN;
+                // 完全使用后端返回的online状态
                 friends = result.friends.map(f => ({
                     username: f.username,
-                    online: wsConnected, // 默认根据WebSocket状态
+                    online: f.online || false,
                     unread: f.unread || false
                 }));
-                // 如果有缓存的在线状态，使用缓存
-                if (onlineStatusCache) {
-                    friends.forEach(f => {
-                        if (onlineStatusCache[f.username] !== undefined) {
-                            f.online = onlineStatusCache[f.username];
-                        }
-                    });
-                }
-                friends.forEach(f => {
-                    if (f.unread) unreadMap[f.username] = true;
-                });
                 renderFriendList();
             }
         } catch (e) {
@@ -423,9 +405,6 @@
             friendListContainer.innerHTML = '<div class="empty-state">加载失败，请刷新</div>';
         }
     }
-
-    // ---- 在线状态缓存 ----
-    let onlineStatusCache = {};
 
     function renderFriendList() {
         if (!friendListContainer) return;
@@ -437,7 +416,6 @@
         for (const f of friends) {
             const active = (currentFriend === f.username) ? 'active' : '';
             const onlineClass = f.online ? 'online' : '';
-            const unreadClass = unreadMap[f.username] ? 'show' : '';
             const unreadCount = unreadCountMap[f.username] || 0;
             const unreadHtml = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
             const msgs = messagesCache[f.username] || [];
@@ -456,7 +434,6 @@
                     </div>
                     ${unreadHtml}
                     <span class="time">${lastTime}</span>
-                    <span class="badge ${unreadClass}"></span>
                 </div>
             `;
         }
@@ -479,7 +456,6 @@
         debugLog(`🔄 切换好友: ${friendTrim} (${thisVersion})`, 'info');
         messageBox.innerHTML = '<div class="empty-state">加载中...</div>';
         currentFriend = friendTrim;
-        unreadMap[friendTrim] = false;
         renderFriendList();
         chatFriendName.textContent = friendTrim;
         chatArea.classList.add('active');
@@ -657,7 +633,6 @@
     async function markAsRead(friend) {
         try {
             await apiCall(`/messages/read?friend=${encodeURIComponent(friend)}`, 'POST');
-            unreadMap[friend] = false;
             renderFriendList();
         } catch (e) {}
     }
@@ -752,10 +727,8 @@
         currentFriend = null;
         friends = [];
         messagesCache = {};
-        unreadMap = {};
         unreadCountMap = {};
         messageIdSet = {};
-        onlineStatusCache = {};
         mainPage.classList.remove('active');
         loginPage.style.display = 'flex';
         chatArea.classList.remove('active');
