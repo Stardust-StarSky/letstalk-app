@@ -81,7 +81,6 @@
     let isUserScrolling = false;
     let renderVersion = 0;
     let currentRecallMsgId = null;
-    let onlineStatusMap = {};
 
     // ---- 工具 ----
     function formatTime(ts) {
@@ -145,12 +144,11 @@
             ws.onopen = () => {
                 isConnecting = false;
                 debugLog('✅ WS连接成功', 'ok');
-                // 连接成功后，所有好友标记为在线
-                friends.forEach(f => { onlineStatusMap[f.username] = true; });
-                renderFriendList();
                 if (currentToken) {
                     ws.send(JSON.stringify({ type: 'auth', token: currentToken, username: currentUser }));
                 }
+                // 连接成功后，刷新好友列表（更新在线状态）
+                loadFriends();
             };
             ws.onmessage = (ev) => {
                 try {
@@ -166,9 +164,8 @@
                 debugLog('🔌 WS关闭', 'warn');
                 isConnecting = false;
                 ws = null;
-                // 断开后，所有好友标记为离线
-                friends.forEach(f => { onlineStatusMap[f.username] = false; });
-                renderFriendList();
+                // 断开后刷新好友列表（更新在线状态为离线）
+                loadFriends();
                 if (currentToken) {
                     clearTimeout(reconnectTimer);
                     reconnectTimer = setTimeout(connectWebSocket, 3000);
@@ -185,40 +182,15 @@
         switch (data.type) {
             case 'auth_success':
                 debugLog('✅ WS认证成功', 'ok');
+                loadFriends(); // 认证成功后刷新好友列表
                 break;
             case 'new_message': {
                 const msg = data.message;
-                // 处理自己的回显：替换临时消息，不额外添加
+                // ⭐ 关键修复：忽略自己的回显，避免重复
                 if (msg.from === currentUser) {
-                    debugLog('📩 收到自己的回显', 'info', msg);
-                    const friend = msg.to;
-                    const friendTrim = friend.trim();
-                    const msgs = messagesCache[friendTrim] || [];
-                    // 查找对应的临时消息（id 以 'temp_' 开头，且内容相同，时间相近）
-                    const tempIndex = msgs.findIndex(m => m.id.startsWith('temp_') && m.text === msg.text && Math.abs(m.time - msg.time) < 5000);
-                    if (tempIndex !== -1) {
-                        // 替换为真实消息
-                        const tempMsg = msgs[tempIndex];
-                        msgs[tempIndex] = msg;
-                        messageIdSet[msg.id] = true;
-                        delete messageIdSet[tempMsg.id];
-                        if (currentFriend === friendTrim) {
-                            renderMessages(friendTrim, renderVersion);
-                        }
-                        debugLog(`✅ 已替换临时消息为真实消息 (${msg.id})`, 'ok');
-                    } else {
-                        // 如果没有找到临时消息，直接添加（但理论上不应发生）
-                        if (!messagesCache[friendTrim]) messagesCache[friendTrim] = [];
-                        messagesCache[friendTrim].push(msg);
-                        messageIdSet[msg.id] = true;
-                        if (currentFriend === friendTrim) {
-                            renderMessages(friendTrim, renderVersion);
-                        }
-                    }
-                    break; // 处理完回显后不再继续
+                    debugLog('⏭️ 忽略自己的回显', 'info');
+                    return;
                 }
-
-                // 处理其他用户的消息
                 if (msg.from !== currentUser && msg.to !== currentUser) {
                     return;
                 }
@@ -242,8 +214,6 @@
             }
             case 'online_status': {
                 const { username, online } = data;
-                // 更新独立维护的在线状态
-                onlineStatusMap[username] = online;
                 const f = friends.find(item => item.username === username);
                 if (f) {
                     f.online = online;
@@ -270,7 +240,6 @@
                     }
                     if (found) break;
                 }
-                // 如果未找到，可能是历史消息未加载，可尝试刷新消息列表
                 if (!found && currentFriend) {
                     loadMessages(currentFriend, renderVersion);
                 }
@@ -393,12 +362,9 @@
             if (result.messages) {
                 const newMsgs = result.messages;
                 const oldMsgs = messagesCache[friend] || [];
-                // 合并消息：保留临时消息，添加新消息（去重）
                 const oldIds = new Set(oldMsgs.map(m => m.id));
-                // 只添加不在旧列表中的消息（且不是临时消息）
-                const addedMsgs = newMsgs.filter(m => !oldIds.has(m.id) && !m.id.startsWith('temp_'));
+                const addedMsgs = newMsgs.filter(m => !oldIds.has(m.id));
                 if (addedMsgs.length > 0) {
-                    // 合并：保留旧消息，追加新消息
                     messagesCache[friend] = [...oldMsgs, ...addedMsgs];
                     addedMsgs.forEach(msg => { if (msg.id) messageIdSet[msg.id] = true; });
                     renderMessages(friend, thisVersion);
@@ -433,11 +399,20 @@
         try {
             const result = await apiCall('/friends');
             if (result.friends) {
+                const wsConnected = ws && ws.readyState === WebSocket.OPEN;
                 friends = result.friends.map(f => ({
                     username: f.username,
-                    online: onlineStatusMap[f.username] !== undefined ? onlineStatusMap[f.username] : false,
+                    online: wsConnected, // 默认根据WebSocket状态
                     unread: f.unread || false
                 }));
+                // 如果有缓存的在线状态，使用缓存
+                if (onlineStatusCache) {
+                    friends.forEach(f => {
+                        if (onlineStatusCache[f.username] !== undefined) {
+                            f.online = onlineStatusCache[f.username];
+                        }
+                    });
+                }
                 friends.forEach(f => {
                     if (f.unread) unreadMap[f.username] = true;
                 });
@@ -448,6 +423,9 @@
             friendListContainer.innerHTML = '<div class="empty-state">加载失败，请刷新</div>';
         }
     }
+
+    // ---- 在线状态缓存 ----
+    let onlineStatusCache = {};
 
     function renderFriendList() {
         if (!friendListContainer) return;
@@ -495,7 +473,6 @@
     function selectFriend(friend) {
         if (!friend) return;
         const friendTrim = friend.trim();
-        // 清空未读计数
         if (unreadCountMap[friendTrim]) unreadCountMap[friendTrim] = 0;
         renderVersion++;
         const thisVersion = renderVersion;
@@ -511,7 +488,7 @@
         markAsRead(friendTrim);
     }
 
-    // ---- 加载消息（合并保留临时消息） ----
+    // ---- 加载消息 ----
     async function loadMessages(friend, version) {
         if (version !== renderVersion) {
             debugLog(`⏭️ 版本不匹配，取消加载`, 'warn');
@@ -523,14 +500,12 @@
             if (result.messages) {
                 const newMsgs = result.messages;
                 const oldMsgs = messagesCache[friend] || [];
-                // 保留已有的消息（包括临时消息），合并新消息（按 ID 去重）
                 const merged = [...oldMsgs];
                 for (const msg of newMsgs) {
                     if (!merged.some(m => m.id === msg.id)) {
                         merged.push(msg);
                     }
                 }
-                // 按时间排序
                 merged.sort((a, b) => a.time - b.time);
                 messagesCache[friend] = merged;
                 merged.forEach(msg => { if (msg.id) messageIdSet[msg.id] = true; });
@@ -543,7 +518,7 @@
         }
     }
 
-    // ---- 渲染消息（含右键撤回） ----
+    // ---- 渲染消息 ----
     function renderMessages(friend, version) {
         if (version !== undefined && version !== renderVersion) {
             debugLog(`⏭️ 渲染版本不匹配 (${version} != ${renderVersion})，放弃渲染`, 'warn');
@@ -596,7 +571,7 @@
 
         messageBox.innerHTML = html;
 
-        // 绑定右键事件（仅对自己的消息且5分钟内有效）
+        // 绑定右键事件
         messageBox.querySelectorAll('.msg-item.me').forEach(el => {
             const msgId = el.dataset.id;
             const msgTime = parseInt(el.dataset.time);
@@ -625,7 +600,6 @@
             if (ok) {
                 try {
                     await apiCall('/message/recall', 'POST', { msgId });
-                    // 本地更新（等待广播）
                 } catch (e) {
                     alert('撤回失败: ' + e.message);
                 }
@@ -688,7 +662,7 @@
         } catch (e) {}
     }
 
-    // ---- 删除消息（保留，但不再使用） ----
+    // ---- 删除消息 ----
     async function deleteMessage(msgId) {
         try {
             await apiCall(`/messages?id=${msgId}`, 'DELETE');
@@ -722,7 +696,6 @@
 
     // ---- 登录 ----
     async function login(username, password) {
-        // 时间限制
         const hour = new Date().getHours();
         if (hour < LOGIN_START_HOUR || hour >= LOGIN_END_HOUR) {
             loginError.textContent = `当前不在服务时间（${LOGIN_START_HOUR}:00-${LOGIN_END_HOUR}:00），请稍后再试。`;
@@ -764,9 +737,6 @@
             loginBtn.disabled = false;
             loginBtn.textContent = '登 录';
             return false;
-        } finally {
-            loginBtn.disabled = false;
-            loginBtn.textContent = '登 录';
         }
     }
 
@@ -785,6 +755,7 @@
         unreadMap = {};
         unreadCountMap = {};
         messageIdSet = {};
+        onlineStatusCache = {};
         mainPage.classList.remove('active');
         loginPage.style.display = 'flex';
         chatArea.classList.remove('active');
@@ -798,12 +769,10 @@
     // ---- 账号信息 ----
     async function loadAccountInfo() {
         debugLog('📋 加载账号信息...', 'info');
-        // 先显示加载状态
         accountInfo.textContent = '加载中...';
         try {
             const result = await apiCall('/accounts/info');
             if (result.success) {
-                // 加载完成后显示欢迎信息
                 accountInfo.textContent = '欢迎使用 Nexus';
                 kvError.classList.add('hidden');
                 loginBtn.disabled = false;
@@ -859,7 +828,6 @@
         if (currentFriend) clearChat(currentFriend);
     });
 
-    // 添加好友
     addFriendBtn.addEventListener('click', () => {
         addFriendModal.classList.add('active');
         friendSearchInput.value = '';
@@ -879,13 +847,11 @@
         if (e.target === e.currentTarget) closeRequests();
     });
 
-    // 好友申请入口
     requestEntry.addEventListener('click', () => {
         requestModal.classList.add('active');
         loadRequests();
     });
 
-    // 关于
     document.getElementById('aboutBtn').addEventListener('click', () => {
         document.getElementById('aboutModal').classList.add('active');
     });
