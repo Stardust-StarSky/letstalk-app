@@ -186,34 +186,21 @@
             case 'new_message': {
                 const msg = data.message;
                 
-                // 处理自己的回显：替换临时消息
+                // 处理自己的回显（直接添加）
                 if (msg.from === currentUser) {
                     debugLog('📩 收到自己的回显', 'info', msg);
                     const friend = msg.to;
                     const friendTrim = friend.trim();
-                    const msgs = messagesCache[friendTrim] || [];
-                    // 查找对应的临时消息（id 以 'temp_' 开头，且内容相同，时间相近）
-                    const tempIndex = msgs.findIndex(m => m.id.startsWith('temp_') && m.text === msg.text && Math.abs(m.time - msg.time) < 5000);
-                    if (tempIndex !== -1) {
-                        // 替换为真实消息
-                        const tempMsg = msgs[tempIndex];
-                        msgs[tempIndex] = msg;
-                        messageIdSet[msg.id] = true;
-                        delete messageIdSet[tempMsg.id];
-                        if (currentFriend === friendTrim) {
-                            renderMessages(friendTrim, renderVersion);
-                        }
-                        debugLog(`✅ 已替换临时消息为真实消息 (${msg.id})`, 'ok');
-                    } else {
-                        // 如果没有找到临时消息，直接添加（但理论上不应发生）
+                    if (!messageIdSet[msg.id]) {
                         if (!messagesCache[friendTrim]) messagesCache[friendTrim] = [];
                         messagesCache[friendTrim].push(msg);
                         messageIdSet[msg.id] = true;
                         if (currentFriend === friendTrim) {
                             renderMessages(friendTrim, renderVersion);
                         }
+                        debugLog(`✅ 已添加自己的消息 (${msg.id})`, 'ok');
                     }
-                    break; // 处理完回显后不再继续
+                    break;
                 }
 
                 // 处理其他用户的消息
@@ -621,36 +608,39 @@
         }
         const clean = text.trim();
         if (!clean) return;
-        const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-        const tempMsg = {
-            id: tempId,
-            from: currentUser,
-            to: currentFriend,
-            text: clean,
-            time: Date.now(),
-            read: true,
-        };
-        if (!messagesCache[currentFriend]) messagesCache[currentFriend] = [];
-        messagesCache[currentFriend].push(tempMsg);
-        messageIdSet[tempId] = true;
-        renderMessages(currentFriend, renderVersion);
-        messageBox.scrollTop = messageBox.scrollHeight;
+
         if (ws && ws.readyState === WebSocket.OPEN) {
+            // 通过 WebSocket 发送，等待回显（由 handleWsMessage 处理）
             ws.send(JSON.stringify({ type: 'message', to: currentFriend, text: clean }));
+            debugLog(`📤 WS消息已发送`, 'ok');
             chatInput.value = '';
             chatInput.focus();
+            // 不乐观添加，等待回显
         } else {
+            // 回退 HTTP
+            debugLog(`⚠️ WS未连接，使用HTTP`, 'warn');
             try {
-                await apiCall('/messages', 'POST', { to: currentFriend, text: clean });
-                await loadMessages(currentFriend);
+                const result = await apiCall('/messages', 'POST', { to: currentFriend, text: clean });
+                if (result.success) {
+                    // HTTP 成功，直接添加消息（因为没有回显）
+                    const newMsg = {
+                        id: result.id,
+                        from: currentUser,
+                        to: currentFriend,
+                        text: clean,
+                        time: Date.now(),
+                        read: true,
+                    };
+                    if (!messagesCache[currentFriend]) messagesCache[currentFriend] = [];
+                    messagesCache[currentFriend].push(newMsg);
+                    messageIdSet[newMsg.id] = true;
+                    renderMessages(currentFriend, renderVersion);
+                    messageBox.scrollTop = messageBox.scrollHeight;
+                } else {
+                    throw new Error(result.error || '发送失败');
+                }
             } catch (e) {
                 alert('发送失败: ' + e.message);
-                const idx = messagesCache[currentFriend].findIndex(m => m.id === tempId);
-                if (idx !== -1) {
-                    messagesCache[currentFriend].splice(idx, 1);
-                    delete messageIdSet[tempId];
-                    renderMessages(currentFriend);
-                }
             }
         }
     }
