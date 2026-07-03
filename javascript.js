@@ -776,6 +776,7 @@
                 currentUser = username;
                 currentToken = result.token;
                 debugLog(`✅ 登录成功: ${username}`, 'ok');
+                localStorage.setItem('token', currentToken);
                 loginError.classList.add('hidden');
                 loginPage.style.display = 'none';
                 mainPage.classList.add('active');

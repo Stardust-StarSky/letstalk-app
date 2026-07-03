@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/svg+xml" href="logo.svg">
-    <title>Nexus [Beta 1.3.1]</title>
+    <title>Nexus [Beta 1.4.0]</title>
 </head>
 <body>
 
@@ -14,7 +14,7 @@
     <div id="loginPage">
         <h1 style="display:flex; align-items:center; justify-content:center; gap:12px;">
             <img src="logo.svg" alt="Nexus Logo" width="100" height="100" />
-            <span>Nexus <small>· 测试版 1.3.1</small></span>
+            <span>Nexus <small>· 测试版 1.4.0</small></span>
         </h1>
         <div class="login-form">
             <label>账号 <input type="text" id="usernameInput" placeholder="请输入账号" autocomplete="off" /></label>
@@ -23,6 +23,9 @@
             <div id="loginError" class="error-msg hidden"></div>
             <div id="kvError" class="error-msg hidden" style="background:#fee2e2; color:#b91c1c;">⚠️ 服务器存储已达上限，请稍后重试。</div>
             <div class="account-info" id="accountInfo">欢迎使用 Nexus</div>
+            <div style="text-align:center; margin-top:8px; font-size:14px; color:#94a3b8;">
+                还没有账号？<a href="/signup" style="color:#3b82f6; text-decoration:none; font-weight:500;">立即注册</a>
+</div>
         </div>
     </div>
 
@@ -67,13 +70,10 @@
         <div class="modal-box">
             <h3>关于</h3>
             <div style="margin:12px 0; line-height:1.8;">
-                <p><strong>版本：测试版 1.3.1</strong></p>
+                <p><strong>版本：测试版 1.4.0</strong></p>
                 <p>更新内容：</p>
                 <ul style="padding-left:20px; color:#3689fe;">
-                    <li>优化输入框</li>
-                    <li>增加表情输入</li>
-                    <li>修复密码输入时的自动填充</li>
-                    <li>修改header，footer的高度及header的元素分布，显示logo及名称而不是“好友”</li>
+                    <li>新增注册审核功能（账号从KV存储、管理员审核）</li>
                 </ul>
                 <p style="margin-top:12px; color:#94a3b8;">© 2026 Nexus</p>
             </div>
