@@ -88,7 +88,7 @@
 </div>
 
 <script>
-    const WORKER_URL = window.location.origin;
+    const WORKER_URL = 'https://letstalk.dengliziti.dpdns.org';
     const usernameInput = document.getElementById('usernameInput');
     const passwordInput = document.getElementById('passwordInput');
     const confirmInput = document.getElementById('confirmInput');
@@ -161,22 +161,17 @@
 
         // 找到这一段并替换：
     try {
-        const resp = await fetch(WORKER_URL + '/auth/register', {
+        const resp = await fetch(`${WORKER_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
         
         // 🔥 修复核心：先检查响应状态，并确保有内容可读
-        if (!resp.ok) {
-            let errText = '提交失败';
-            try {
-                const errResult = await resp.json();
-                errText = errResult.error || errText;
-            } catch(_) {
-                errText = await resp.text() || errText; // 如果不是JSON，读纯文本
-            }
-            showError('❌ ' + errText);
+        const contentType = resp.headers.get("content-type") || "";
+        if (!resp.ok || !contentType.includes("application/json")) {
+            const errorText = await resp.text(); // 哪怕跨域失败或返回404，也当做文本读，不让它报JSON错
+            showError('❌ 服务器或跨域错误: ' + (errorText || '无法连接到后端Worker'));
             registerBtn.disabled = false;
             registerBtn.textContent = '提交申请';
             return;
