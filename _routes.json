@@ -1,5 +1,13 @@
 {
   "version": 1,
   "include": ["/*"],
-  "exclude": ["/signup", "/signup/*", "/admin", "/admin/*", "/auth/*", "/ws", "/message/*"]
+  "exclude": [
+    "/auth/*",
+    "/admin/*",
+    "/friend/*",
+    "/messages/*",
+    "/ws",
+    "/message/*",
+    "/accounts/*"
+  ]
 }
