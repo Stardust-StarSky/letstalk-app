@@ -835,18 +835,6 @@
         debugLog('📋 加载账号信息...', 'info');
         accountInfo.textContent = '加载中...';
 
-        // 1. 先检查时间限制（8:00-22:00）
-        const hour = new Date().getHours();
-        if (hour < LOGIN_START_HOUR || hour >= LOGIN_END_HOUR) {
-            // 显示时间限制错误，禁用登录按钮
-            loginError.textContent = `⏰ 当前不在服务时间（${LOGIN_START_HOUR}:00-${LOGIN_END_HOUR}:00），请稍后再试。`;
-            loginError.classList.remove('hidden');
-            loginBtn.disabled = true;
-            accountInfo.textContent = `⏰ ${LOGIN_START_HOUR}:00-${LOGIN_END_HOUR}:00 服务`;
-            debugLog(`⏰ 不在服务时间，登录已禁用`, 'warn');
-            return; // 直接返回，不再请求API
-        }
-
         // 2. 时间允许，尝试获取账号信息（检查KV状态）
         try {
             const result = await apiCall('/accounts/info');
