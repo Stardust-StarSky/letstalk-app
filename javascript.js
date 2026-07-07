@@ -56,6 +56,8 @@
     const kvError = document.getElementById('kvError');
     const accountInfo = document.getElementById('accountInfo');
     const logoutBtn = document.getElementById('logoutBtn');
+    const addFriendBtn = document.getElementById('addFriendBtnHeader');
+    const aboutBtn = document.getElementById('aboutBtnFriend');
     const myUsernameSpan = document.getElementById('myUsername');
     const friendListContainer = document.getElementById('friendListContainer');
     const chatArea = document.getElementById('chatArea');
@@ -64,7 +66,6 @@
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
     const backBtn = document.getElementById('backBtn');
-    const addFriendBtn = document.getElementById('addFriendBtn');
     const addFriendModal = document.getElementById('addFriendModal');
     const friendSearchInput = document.getElementById('friendSearchInput');
     const searchFriendBtn = document.getElementById('searchFriendBtn');
@@ -870,6 +871,7 @@
                 currentUser = username;
                 currentToken = result.token;
                 debugLog(`✅ 登录成功: ${username}`, 'ok');
+                document.getElementById('app').classList.add('logged-in');
                 localStorage.setItem('token', currentToken);
                 loginError.classList.add('hidden');
                 loginPage.style.display = 'none';
@@ -905,6 +907,7 @@
     async function logout() {
         debugLog(`🚪 用户登出: ${currentUser}`, 'info');
         stopPolling();
+        document.getElementById('app').classList.remove('logged-in');
         if (ws) { ws.close(); ws = null; }
         clearTimeout(reconnectTimer);
         try { if (currentToken) await apiCall('/auth/logout', 'POST'); } catch (e) {}
@@ -1016,6 +1019,10 @@
     friendSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); searchFriend(); }
     });
+    // 关于按钮
+    aboutBtn.addEventListener('click', () => {
+        document.getElementById('aboutModal').classList.add('active');
+    });
     document.getElementById('closeAddFriendBtn').addEventListener('click', closeAddFriend);
     document.getElementById('closeRequestsBtn').addEventListener('click', closeRequests);
     addFriendModal.addEventListener('click', (e) => {
@@ -1028,10 +1035,6 @@
     requestEntry.addEventListener('click', () => {
         requestModal.classList.add('active');
         loadRequests();
-    });
-
-    document.getElementById('aboutBtn').addEventListener('click', () => {
-        document.getElementById('aboutModal').classList.add('active');
     });
     document.getElementById('closeAboutBtn').addEventListener('click', () => {
         const modal = document.getElementById('aboutModal');
@@ -1148,6 +1151,16 @@
     }
 
     // 如果输入框获得焦点，不自动关闭面板（用户可手动点击表情按钮关闭）
+    // ---- 加载每日风景图 ----
+    async function loadDailyWallpaper() {
+        const loginPage = document.getElementById('loginPage');
+        // 使用本地图片，保持原始宽高比，完整可见（可能有留白）
+        loginPage.style.backgroundImage = 'url("background.jpg")';
+        loginPage.style.backgroundSize = 'cover';   // 完整显示，不裁剪，不拉伸
+        loginPage.style.backgroundRepeat = 'no-repeat';
+        loginPage.style.backgroundPosition = 'center';
+        loginPage.style.backgroundColor = '#282a37'; // 留白区域颜色（与登录页背景一致）
+    }
 
     // ---- 初始化 ----
     function renderEmojiPanel() {
@@ -1179,6 +1192,7 @@
         input.focus();
     }
     debugLog('🚀 应用启动', 'ok');
+    loadDailyWallpaper();
     loginPage.style.display = 'flex';
     mainPage.classList.remove('active');
     loadAccountInfo();
