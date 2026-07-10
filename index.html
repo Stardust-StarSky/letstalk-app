@@ -79,16 +79,11 @@
             <div style="margin:12px 0; line-height:1.8;">
                 <p><strong>版本：正式版 1.6.0</strong></p>
                 <p>更新内容：</p>
-                <ul style="padding-left:20px; color:#3689fe;">
-                    <li>登录页面重新设计，毛玻璃卡片居中</li>
-                    <li>好友列表头部与聊天头部高度统一，增加“关于”和“添加好友”按钮</li>
-                    <li>新增未读消息红点计数，支持离线通知</li>
-                    <li>新增删除好友功能，实时/离线通知</li>
-                    <li>聊天头部三点菜单侧栏，支持清除聊天记录和删除好友</li>
-                    <li>模态框背景虚化效果</li>
-                    <li>修复 WebSocket 连接稳定性问题</li>
-                    <li>修复好友列表刷新不及时的问题</li>
-                    <li>优化暗色主题样式</li>
+                <ul style="padding-left:20px; color:var(--accent-color, #3689fe);">
+                    <li>新增个人资料设置（昵称、个性签名、邮箱）</li>
+                    <li>新增昵称系统，好友列表和聊天中显示昵称</li>
+                    <li>修复消息同步稳定性问题</li>
+                    <li>优化暗色主题与UI细节</li>
                 </ul>
                 <p style="margin-top:12px; color:#94a3b8;">© 2026 Nexus</p>
             </div>
@@ -97,7 +92,35 @@
             </div>
         </div>
     </div>
-
+    <!-- 个人设置模态框 -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-box" style="max-width:450px;">
+            <h3>个人设置</h3>
+            <form id="profileForm" style="margin-top:16px;">
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#334155; margin-bottom:4px;">账号</label>
+                    <input type="text" id="profileUsername" disabled style="background:#e9edf2; color:#94a3b8;" />
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#334155; margin-bottom:4px;">昵称</label>
+                    <input type="text" id="profileNickname" placeholder="输入昵称（留空则显示账号名）" maxlength="20" />
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#334155; margin-bottom:4px;">个性签名</label>
+                    <input type="text" id="profileBio" placeholder="写点个性签名吧" maxlength="50" />
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:14px; font-weight:500; color:#334155; margin-bottom:4px;">邮箱</label>
+                    <input type="email" id="profileEmail" placeholder="请输入邮箱" />
+                </div>
+                <div class="btn-row" style="margin-top:16px;">
+                    <button type="button" class="btn-secondary" id="closeProfileBtn">取消</button>
+                    <button type="submit" class="btn-primary" id="saveProfileBtn">保存</button>
+                </div>
+                <div id="profileMessage" style="margin-top:12px; font-size:14px; text-align:center; display:none;"></div>
+            </form>
+        </div>
+    </div>
     <!-- 主界面 -->
     <div id="mainPage">
         <div class="content-row">
@@ -121,7 +144,10 @@
                 <div class="list" id="friendListContainer"><div class="empty-state">加载中...</div></div>
                 <div class="user-footer">
                     <span id="myUsername">用户</span>
-                    <button class="logout-btn" id="logoutBtn">退出</button>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button id="profileBtn" style="background:none; border:none; cursor:pointer; font-size:18px;" title="个人设置">⚙️</button>
+                        <button class="logout-btn" id="logoutBtn">退出</button>
+                    </div>
                 </div>
             </div>
             <div id="chatArea">

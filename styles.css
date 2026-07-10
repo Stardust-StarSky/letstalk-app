@@ -1048,6 +1048,18 @@ body { background:#f0f2f5; height:100vh; display:flex; justify-content:center; a
     .login-version {
         color: white;
     }
+    #profileModal .modal-box label {
+        color: #cbd5e1 !important;
+    }
+    #profileModal .modal-box input:not([disabled]) {
+        background: #2a2a32;
+        border-color: #3a3a44;
+        color: #f1f5f9;
+    }
+    #profileModal .modal-box input:disabled {
+        background: #2a2a32 !important;
+        color: #94a3b8 !important;
+    }
 }
 
 /* ===== 模态框动画 ===== */

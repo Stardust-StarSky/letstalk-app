@@ -82,6 +82,15 @@
     const sideMenuCloseBtn = document.getElementById('sideMenuCloseBtn');
     const clearChatMenuItem = document.getElementById('clearChatMenuItem');
     const deleteFriendMenuItem = document.getElementById('deleteFriendMenuItem');
+    const profileBtn = document.getElementById('profileBtn');
+    const profileModal = document.getElementById('profileModal');
+    const closeProfileBtn = document.getElementById('closeProfileBtn');
+    const profileForm = document.getElementById('profileForm');
+    const profileUsername = document.getElementById('profileUsername');
+    const profileNickname = document.getElementById('profileNickname');
+    const profileBio = document.getElementById('profileBio');
+    const profileEmail = document.getElementById('profileEmail');
+    const profileMessage = document.getElementById('profileMessage');
 
     // ---- 状态 ----
     let currentUser = null;
@@ -103,6 +112,7 @@
     let pendingNewMessages = 0;         // 待显示的未读新消息条数
     let emojiPanelVisible = false;
     let heartbeatInterval = null;
+    let typingTimeout = null;  // 发送端限流定时器
 
     // ---- 工具 ----
     const EMOJI_LIST = [
@@ -517,6 +527,7 @@
                 // 更新 friends 数组
                 friends = result.friends.map(f => ({
                     username: f.username,
+                    nickname: f.nickname || '',   // 新增
                     unread: f.unread || 0
                 }));
                 // 更新未读计数
@@ -552,13 +563,14 @@
             const lastMsg = msgs.length > 0 ? msgs[msgs.length-1] : null;
             const lastText = lastMsg ? (lastMsg.from === currentUser ? '我: ' : '') + lastMsg.text : '';
             const lastTime = lastMsg && lastMsg.time ? formatTime(lastMsg.time) : '';
+            const displayName = f.nickname || f.username;
             html += `
                 <div class="friend-item ${active}" data-friend="${f.username}">
                     <div class="avatar">
                         ${getAvatarLetter(f.username)}
                     </div>
                     <div class="info">
-                        <div class="name">${escapeHtml(f.username)}</div>
+                        <div class="name">${escapeHtml(displayName)}</div>
                         <div class="last-msg">${escapeHtml(lastText)}</div>
                     </div>
                     ${unreadHtml}
@@ -577,6 +589,8 @@
 
     // ---- 选择好友 ----
     function selectFriend(friend) {
+        clearTimeout(window.typingClearTimeout);
+        chatFriendName.textContent = friend || '选择好友';
         const isFriend = friends.some(f => f.username === friend);
         if (!isFriend) {
             // 仍允许查看历史，但标记为“已删除”
@@ -597,7 +611,9 @@
         messageBox.innerHTML = '<div class="empty-state">加载中...</div>';
         currentFriend = friendTrim;
         renderFriendList();
-        chatFriendName.textContent = friendTrim;
+        const friendObj = friends.find(f => f.username === friend);
+        const displayName = friendObj?.nickname || friend;
+        chatFriendName.textContent = displayName;
         chatArea.classList.add('active');
         messagesCache[friendTrim] = [];
         loadMessages(friendTrim, thisVersion);
@@ -648,6 +664,23 @@
             debugLog('❌ 获取通知失败: ' + e.message, 'error');
         }
     }
+    async function loadProfile() {
+        try {
+            const result = await apiCall('/profile');
+            if (result.success) {
+                const p = result.profile;
+                profileUsername.value = p.username;
+                profileNickname.value = p.nickname || '';
+                profileBio.value = p.bio || '';
+                profileEmail.value = p.email || '';
+                const displayName = p.nickname || p.username;
+                myUsernameSpan.textContent = displayName;
+                renderFriendList();
+            }
+        } catch (e) {
+            console.error('加载个人资料失败:', e);
+        }
+    }
     function showToast(message, type = 'error') {
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
@@ -693,6 +726,7 @@
         }
 
         let html = '';
+        const animationClass = animate ? '' : 'no-animation';
         const fiveMinutes = 5 * 60 * 1000;
 
         for (let i = 0; i < msgs.length; i++) {
@@ -706,16 +740,16 @@
             if (i === 0 || (msg.time - prevTime) > fiveMinutes) {
                 html += `<div class="time-label">${formatTimeLabel(msg.time)}</div>`;
             }
+            // 在循环中，获取发送者昵称
+            const senderName = msg.fromNickname || msg.from;
 
-            // ✅ 根据 animate 参数决定是否添加 no-animation 类
-            const animationClass = animate ? '' : 'no-animation';
+            // 在构建 html 时，在消息气泡上方添加 sender 标签（仅对方消息）
             html += `
                 <div class="msg-item ${isMe ? 'me' : ''} ${animationClass}" data-id="${msg.id}" data-from="${msg.from}" data-time="${msg.time}">
                     <div class="${textClass}">${escapeHtml(displayText)}</div>
                 </div>
             `;
         }
-
         messageBox.innerHTML = html;
 
         // 绑定右键事件
@@ -781,6 +815,8 @@
         if (ws && ws.readyState === WebSocket.OPEN) {
             // 通过 WebSocket 发送，等待回显（由 handleWsMessage 处理）
             ws.send(JSON.stringify({ type: 'message', to: currentFriend, text: clean }));
+            clearTimeout(window.typingClearTimeout);
+            chatFriendName.textContent = currentFriend;
             debugLog(`📤 WS消息已发送`, 'ok');
             chatInput.value = '';
             chatInput.focus();
@@ -877,6 +913,7 @@
                 loginPage.style.display = 'none';
                 mainPage.classList.add('active');
                 myUsernameSpan.textContent = currentUser;
+                await loadProfile();  // 加载昵称等资料
                 connectWebSocket();
                 await loadFriends();
                 await loadRequestCount();
@@ -1004,6 +1041,21 @@
             e.preventDefault();
             sendBtn.click();
         }
+    })
+
+    // 单独绑定 input 事件（只绑定一次）
+    chatInput.addEventListener('input', function() {
+        if (!currentFriend || !ws || ws.readyState !== WebSocket.OPEN) return;
+        // 发送 typing 事件
+        ws.send(JSON.stringify({
+            type: 'typing',
+            to: currentFriend
+        }));
+        // 清除之前的限流定时器
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            // 停止输入后不做额外操作，接收方3秒后自动消失
+        }, 1000);
     });
     backBtn.addEventListener('click', () => {
         chatArea.classList.remove('active');
@@ -1022,6 +1074,32 @@
     // 关于按钮
     aboutBtn.addEventListener('click', () => {
         document.getElementById('aboutModal').classList.add('active');
+    });
+    profileBtn.addEventListener('click', openProfile);
+    closeProfileBtn.addEventListener('click', closeProfile);
+    profileModal.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeProfile();
+    });
+
+    profileForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const nickname = profileNickname.value.trim();
+        const bio = profileBio.value.trim();
+        const email = profileEmail.value.trim();
+        try {
+            const result = await apiCall('/profile', 'PUT', { nickname, bio, email });
+            if (result.success) {
+                showToast('✅ 资料更新成功', 'info');
+                const displayName = result.profile.nickname || result.profile.username;
+                myUsernameSpan.textContent = displayName;
+                renderFriendList();
+                closeProfile();
+            } else {
+                showToast('❌ ' + (result.error || '更新失败'), 'error');
+            }
+        } catch (e) {
+            showToast('❌ 更新失败: ' + e.message, 'error');
+        }
     });
     document.getElementById('closeAddFriendBtn').addEventListener('click', closeAddFriend);
     document.getElementById('closeRequestsBtn').addEventListener('click', closeRequests);
@@ -1118,6 +1196,18 @@
             }, true);
         }
     });
+    function openProfile() {
+        profileModal.classList.add('active');
+        loadProfile();
+        profileMessage.style.display = 'none';
+    }
+
+    function closeProfile() {
+        profileModal.classList.add('closing');
+        setTimeout(() => {
+            profileModal.classList.remove('active', 'closing');
+        }, 200);
+    }
 
     // ---- 删除好友功能 ----
     async function deleteFriend(friend) {
