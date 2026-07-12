@@ -24,7 +24,7 @@
             padding: 16px;
         }
 
-        /* 动画 */
+        /* ===== 动画 ===== */
         @keyframes fadeInUp {
             0% { opacity: 0; transform: translateY(30px); }
             100% { opacity: 1; transform: translateY(0); }
@@ -34,18 +34,19 @@
             50% { transform: scale(1.03); }
         }
 
-        .container {
-            display: flex;
-            flex-wrap: wrap;
+        /* ===== 桌面版 ===== */
+        #desktopIntro {
+            display: block;
             width: 100%;
             max-width: 1400px;
             padding: 20px 30px;
-            gap: 20px;
-            z-index: 10;
         }
-
-        /* 左侧区域 */
-        .left-section {
+        #desktopIntro .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        #desktopIntro .left-section {
             flex: 1 1 50%;
             min-width: 280px;
             display: flex;
@@ -54,30 +55,19 @@
             text-align: center;
             padding: 10px 0;
         }
-
-        .logo-wrapper {
-            width: clamp(150px, 30vw, 280px);
-            height: clamp(150px, 30vw, 280px);
+        #desktopIntro .logo-wrapper {
+            width: 500px;
+            height: 300px;
             margin-bottom: 16px;
             opacity: 0;
             animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
-        .logo-wrapper img {
+        #desktopIntro .logo-wrapper img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
-
-        .brand-title {
-            font-size: clamp(28px, 5vw, 48px);
-            font-weight: 500;
-            letter-spacing: 0.1em;
-            color: #ffffff;
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-            margin-bottom: 6px;
-        }
-
-        .brand-subtitle {
+        #desktopIntro .brand-subtitle {
             font-size: clamp(12px, 1.8vw, 20px);
             font-weight: 400;
             letter-spacing: 0.2em;
@@ -88,8 +78,7 @@
             opacity: 0;
             animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards;
         }
-
-        .main-slogan {
+        #desktopIntro .main-slogan {
             font-size: clamp(24px, 4vw, 50px);
             font-weight: 500;
             display: flex;
@@ -101,37 +90,33 @@
             opacity: 0;
             animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s forwards;
         }
-        .main-slogan span {
+        #desktopIntro .main-slogan span {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
             flex-wrap: wrap;
             justify-content: center;
         }
-
-        .main-slogan::before,
-        .main-slogan::after {
+        #desktopIntro .main-slogan::before,
+        #desktopIntro .main-slogan::after {
             content: "";
-            flex: 0 0 30px;
+            flex: 0 0 50px;
             height: 2px;
-            border-radius: 2px;
+            border-radius: 5px;
         }
-        .main-slogan::before {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+        #desktopIntro .main-slogan::before {
+            background: linear-gradient(90deg, transparent, #d621fd);
         }
-        .main-slogan::after {
-            background: linear-gradient(270deg, transparent, rgba(255,255,255,0.3));
+        #desktopIntro .main-slogan::after {
+            background: linear-gradient(270deg, transparent, #05dfff);
         }
-
-        .highlight-text {
+        #desktopIntro .highlight-text {
             background: linear-gradient(90deg, #d500f9, #00e5ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             display: inline-block;
         }
-
-        .desc-text {
+        #desktopIntro .desc-text {
             font-size: clamp(16px, 2vw, 20px);
             color: rgba(255,255,255,0.7);
             line-height: 1.8;
@@ -140,17 +125,14 @@
             opacity: 0;
             animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s forwards;
         }
-
-        /* 特性网格 */
-        .features-grid {
+        #desktopIntro .features-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 16px;
             width: 100%;
             max-width: 700px;
         }
-
-        .feature-card {
+        #desktopIntro .feature-card {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -159,12 +141,11 @@
             opacity: 0;
             animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
-        .feature-card:nth-child(1) { animation-delay: 0.8s; }
-        .feature-card:nth-child(2) { animation-delay: 0.9s; }
-        .feature-card:nth-child(3) { animation-delay: 1.0s; }
-        .feature-card:nth-child(4) { animation-delay: 1.1s; }
-
-        .feature-icon {
+        #desktopIntro .feature-card:nth-child(1) { animation-delay: 0.8s; }
+        #desktopIntro .feature-card:nth-child(2) { animation-delay: 0.9s; }
+        #desktopIntro .feature-card:nth-child(3) { animation-delay: 1.0s; }
+        #desktopIntro .feature-card:nth-child(4) { animation-delay: 1.1s; }
+        #desktopIntro .feature-icon {
             width: clamp(50px, 8vw, 70px);
             height: clamp(50px, 8vw, 70px);
             border: 1px solid rgba(255,255,255,0.2);
@@ -177,25 +158,22 @@
             font-size: clamp(22px, 3.5vw, 30px);
             transition: 0.3s;
         }
-        .feature-card:hover .feature-icon {
+        #desktopIntro .feature-card:hover .feature-icon {
             background: rgba(255, 255, 255, 0.05);
             border-color: #b388ff;
             box-shadow: 0 0 15px rgba(179, 136, 255, 0.2);
         }
-
-        .feature-title {
+        #desktopIntro .feature-title {
             font-size: clamp(16px, 2.2vw, 20px);
             font-weight: 500;
             margin-bottom: 4px;
         }
-        .feature-desc {
+        #desktopIntro .feature-desc {
             font-size: clamp(12px, 1.4vw, 14px);
             color: rgba(255,255,255,0.5);
             line-height: 1.3;
         }
-
-        /* 右侧气泡 */
-        .right-section {
+        #desktopIntro .right-section {
             flex: 1 1 40%;
             min-width: 200px;
             position: relative;
@@ -204,23 +182,21 @@
             align-items: center;
             min-height: 300px;
         }
-
-        .chat-bubble {
-            position: absolute;
-            padding: 12px 24px;
-            border-radius: 20px;
-            background: rgba(50, 20, 100, 0.4);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            animation: breathe 4s ease-in-out infinite;
-            white-space: nowrap;
-        }
-
-        .bubble-avatar {
+        #desktopIntro .chat-bubble {
+        position: absolute;
+        padding: 12px 24px;
+        border-radius: 20px;
+        background: rgba(50, 20, 100, 0.4);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        opacity: 0; /* 默认隐藏，由动画控制显示 */
+    }
+        #desktopIntro .bubble-avatar {
             width: 24px;
             height: 24px;
             border-radius: 50%;
@@ -232,373 +208,353 @@
             font-size: 12px;
             flex-shrink: 0;
         }
-
-        .bubble-text {
+        #desktopIntro .bubble-text {
             font-size: clamp(14px, 1.8vw, 20px);
             color: #ffffff;
         }
-        .bubble-time {
+        #desktopIntro .bubble-time {
             font-size: clamp(11px, 1.3vw, 15px);
             color: rgba(255,255,255,0.5);
             margin-left: 4px;
         }
+        .b1 { opacity: 0; top: 50%; left: 5%; background: linear-gradient(135deg, rgba(110,30,200,0.5), rgba(70,20,180,0.5)); border-color: #9c27b0; animation: fadeInUp 0.8s cubic-bezier(0.2,0.8,0.2,1) 1.2s forwards, breathe 4s ease-in-out 0.9s infinite; }
+        .b2 { opacity: 0; top: 30%; right: 0%; background: linear-gradient(135deg, rgba(20,100,200,0.5), rgba(10,50,150,0.5)); border-color: #2962ff; animation: fadeInUp 0.8s cubic-bezier(0.2,0.8,0.2,1) 1.4s forwards, breathe 4s ease-in-out 1.1s infinite; }
+        .b3 { opacity: 0; bottom: 20%; left:70%; background: linear-gradient(135deg, rgba(130,40,200,0.5), rgba(50,0,100,0.5)); border-color: #aa00ff; animation: fadeInUp 0.8s cubic-bezier(0.2,0.8,0.2,1) 1.6s forwards, breathe 4s ease-in-out 1.3s infinite; }
+        .b4 { opacity: 0; bottom: 5%; left: 10%; background: linear-gradient(135deg, rgba(10,50,150,0.5), rgba(0,80,200,0.5)); border-color: #00b0ff; animation: fadeInUp 0.8s cubic-bezier(0.2,0.8,0.2,1) 1.8s forwards, breathe 4s ease-in-out 1.5s infinite; }
 
-        /* 气泡位置 */
-        .b1 {
-            opacity: 0;
-            top: 15%;
-            left: 5%;
-            background: linear-gradient(135deg, rgba(110, 30, 200, 0.5), rgba(70, 20, 180, 0.5));
-            border-color: #9c27b0;
-            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0s forwards,
-                       breathe 4s ease-in-out 0.9s infinite;
+        /* ===== 手机版 ===== */
+        #mobileIntro {
+            display: none;
+            width: 100%;
+            max-width: 480px;
+            padding: 50px 16px;
         }
-        .b2 {
-            opacity: 0;
-            top: 5%;
-            right: 5%;
-            background: linear-gradient(135deg, rgba(20, 100, 200, 0.5), rgba(10, 50, 150, 0.5));
-            border-color: #2962ff;
-            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards,
-                       breathe 4s ease-in-out 1.1s infinite;
-        }
-        .b3 {
-            opacity: 0;
-            bottom: 20%;
-            right: 0%;
-            background: linear-gradient(135deg, rgba(130, 40, 200, 0.5), rgba(50, 0, 100, 0.5));
-            border-color: #aa00ff;
-            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s forwards,
-                       breathe 4s ease-in-out 1.3s infinite;
-        }
-        .b4 {
-            opacity: 0;
-            bottom: 5%;
-            left: 10%;
-            background: linear-gradient(135deg, rgba(10, 50, 150, 0.5), rgba(0, 80, 200, 0.5));
-            border-color: #00b0ff;
-            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s forwards,
-                       breathe 4s ease-in-out 1.5s infinite;
-        }
-
-        /* ===== 移动端适配 ===== */
-        @media (max-width: 768px) {
-            body {
-                padding: 12px;
-                align-items: flex-start;
-                padding-top: 20px;
-            }
-
-            .container {
-                flex-direction: column;
-                padding: 10px 12px;
-                gap: 10px;
-            }
-
-            .left-section {
-                flex: 1 1 auto;
-                min-width: unset;
-                padding-top: 0;
-                margin-bottom: 20px;
-            }
-
-            .logo-wrapper {
-                width: 120px;
-                height: 120px;
-                margin-bottom: 8px;
-            }
-
-            .brand-subtitle {
-                font-size: 11px;
-                letter-spacing: 0.15em;
-                margin-bottom: 12px;
-            }
-
-            .main-slogan {
-                font-size: 20px;
-                gap: 6px;
-                margin-bottom: 10px;
-            }
-            .main-slogan::before,
-            .main-slogan::after {
-                flex: 0 0 16px;
-            }
-
-            .desc-text {
-                font-size: 14px;
-                max-width: 100%;
-                margin-bottom: 20px;
-                line-height: 1.6;
-            }
-
-            .features-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
-                max-width: 100%;
-            }
-
-            .feature-card {
-                padding: 8px 4px;
-            }
-            .feature-icon {
-                width: 48px;
-                height: 48px;
-                font-size: 20px;
-                border-radius: 10px;
-                margin-bottom: 6px;
-            }
-            .feature-title {
-                font-size: 14px;
-            }
-            .feature-desc {
-                font-size: 11px;
-            }
-
-            /* 右侧气泡 - 移动端缩小并重新布局 */
-            .right-section {
-                flex: 1 1 auto;
-                min-height: 200px;
-                min-width: unset;
-                height: 220px;
-                margin-top: -10px;
-            }
-
-            .chat-bubble {
-                padding: 8px 14px;
-                border-radius: 14px;
-                gap: 6px;
-                backdrop-filter: blur(6px);
-                white-space: nowrap;
-            }
-
-            .bubble-avatar {
-                width: 20px;
-                height: 20px;
-                font-size: 10px;
-            }
-            .bubble-text {
-                font-size: 12px;
-            }
-            .bubble-time {
-                font-size: 10px;
-            }
-
-            /* 移动端气泡位置调整，更紧凑 */
-            .b1 { top: 5%; left: 0%; }
-            .b2 { top: 0%; right: 0%; }
-            .b3 { bottom: 15%; right: -5%; }
-            .b4 { bottom: 0%; left: 5%; }
-        }
-
-        /* 小屏手机（< 400px） */
-        @media (max-width: 400px) {
-            .logo-wrapper {
-                width: 90px;
-                height: 90px;
-            }
-            .main-slogan {
-                font-size: 17px;
-            }
-            .desc-text {
-                font-size: 13px;
-            }
-            .feature-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 17px;
-            }
-            .feature-title {
-                font-size: 13px;
-            }
-            .feature-desc {
-                font-size: 10px;
-            }
-            .chat-bubble {
-                padding: 6px 10px;
-            }
-            .bubble-text {
-                font-size: 11px;
-            }
-            .right-section {
-                min-height: 160px;
-                height: 170px;
-            }
-        }
-
-        /* 平板适配 */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .container {
-                padding: 20px 24px;
-                gap: 16px;
-            }
-            .logo-wrapper {
-                width: 200px;
-                height: 200px;
-            }
-            .main-slogan {
-                font-size: 32px;
-            }
-            .features-grid {
-                gap: 14px;
-            }
-            .right-section {
-                min-height: 260px;
-            }
-            .chat-bubble {
-                padding: 10px 18px;
-            }
-            .bubble-text {
-                font-size: 16px;
-            }
-        }
-        /* 按钮样式 */
-        .action-buttons {
+        #mobileIntro .mobile-container {
             display: flex;
-            gap: 16px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 12px;
         }
-
-        .btn {
+        #mobileIntro .mobile-logo {
+            width: 300px;
+            height: 150px;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        #mobileIntro .mobile-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #mobileIntro .mobile-subtitle {
+            font-size: 20px;
+            font-weight: 400;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #e040fb, #7c4dff, #00e5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards;
+        }
+        #mobileIntro .mobile-slogan {
+            font-size: 30px;
+            font-weight: 500;
+            color: #ffffff;
+            line-height: 1.6;
+            margin-top: 4px;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s forwards;
+        }
+        #mobileIntro .mobile-slogan .highlight {
+            background: linear-gradient(90deg, #d500f9, #00e5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #mobileIntro .mobile-desc {
+            font-size: 17px;
+            color: rgba(255,255,255,0.6);
+            line-height: 1.6;
+            max-width: 320px;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s forwards;
+        }
+        #mobileIntro .mobile-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 340px;
+            margin-top: 4px;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards;
+        }
+        #mobileIntro .mobile-feature {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 12px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            transition: 0.3s;
+        }
+        #mobileIntro .mobile-feature:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        #mobileIntro .mobile-feature .icon {
+            font-size: 30px;
+            color: #b388ff;
+            margin-bottom: 4px;
+        }
+        #mobileIntro .mobile-feature .name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+        #mobileIntro .mobile-feature .desc {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 2px;
+        }
+        #mobileIntro .mobile-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 280px;
+            margin-top: 4px;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s forwards;
+        }
+        #mobileIntro .mobile-btn {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 14px 36px;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
             border-radius: 50px;
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 600;
             text-decoration: none;
             transition: all 0.3s ease;
             cursor: pointer;
             border: none;
+            width: 100%;
         }
-
-        .btn-primary {
+        #mobileIntro .mobile-btn.primary {
             background: linear-gradient(135deg, #7c4dff, #d500f9);
             color: #ffffff;
             box-shadow: 0 4px 20px rgba(124, 77, 255, 0.4);
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(124, 77, 255, 0.5);
+        #mobileIntro .mobile-btn.primary:active {
+            transform: scale(0.97);
         }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.08);
+        #mobileIntro .mobile-btn.secondary {
+            background: rgba(255,255,255,0.08);
             color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255,255,255,0.2);
             backdrop-filter: blur(10px);
         }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
+        #mobileIntro .mobile-btn.secondary:active {
+            transform: scale(0.97);
+        }
+        #mobileIntro .mobile-footer {
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 8px;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.7s forwards;
         }
 
-        /* 移动端按钮适配 */
+        /* ===== 响应式切换 ===== */
         @media (max-width: 768px) {
-            .btn {
-                padding: 12px 28px;
-                font-size: 16px;
-                gap: 8px;
+            body {
+                padding: 0;
+                align-items: flex-start;
+                padding-top: 10px;
+                background: url('background.png') no-repeat center top / cover;
+                background-color: #0b0719;
             }
-            .action-buttons {
-                gap: 12px;
-                margin-bottom: 20px;
+            #desktopIntro {
+                display: none !important;
+            }
+            #mobileIntro {
+                display: block !important;
             }
         }
-        @media (max-width: 400px) {
-            .btn {
-                padding: 10px 20px;
+
+        /* ===== 平板优化 ===== */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #desktopIntro .container {
+                padding: 10px 16px;
+            }
+            #desktopIntro .logo-wrapper {
+                width: 180px;
+                height: 180px;
+            }
+            #desktopIntro .main-slogan {
+                font-size: 28px;
+            }
+            #desktopIntro .features-grid {
+                gap: 12px;
+            }
+            #desktopIntro .right-section {
+                min-height: 240px;
+            }
+            #desktopIntro .chat-bubble {
+                padding: 8px 16px;
+            }
+            #desktopIntro .bubble-text {
                 font-size: 14px;
             }
-            .action-buttons {
-                flex-direction: column;
-                align-items: center;
-                width: 100%;
+        }
+
+        /* ===== 小屏手机 ===== */
+        @media (max-width: 400px) {
+            #mobileIntro .mobile-title {
+                font-size: 22px;
             }
-            .action-buttons .btn {
-                width: 100%;
-                justify-content: center;
+            #mobileIntro .mobile-slogan {
+                font-size: 17px;
+            }
+            #mobileIntro .mobile-features {
+                gap: 6px;
+            }
+            #mobileIntro .mobile-feature {
+                padding: 8px 4px;
+            }
+            #mobileIntro .mobile-feature .icon {
+                font-size: 18px;
+            }
+            #mobileIntro .mobile-feature .name {
+                font-size: 12px;
+            }
+            #mobileIntro .mobile-feature .desc {
+                font-size: 10px;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-
-        <div class="left-section">
-            <div class="logo-wrapper">
-                <img src="logo-intro.png" alt="Nexus Logo" draggable="false">
+    <!-- ===== 桌面版 ===== -->
+    <div id="desktopIntro">
+        <div class="container">
+            <div class="left-section">
+                <div class="logo-wrapper">
+                    <img src="logo-intro.png" alt="Nexus Logo">
+                </div>
+                <p class="brand-subtitle">SIMPLE · SAFE · SOCIAL</p>
+                <div class="main-slogan">
+                    <span>连接更多 遇见<span class="highlight-text">无限可能</span></span>
+                </div>
+                <p class="desc-text">
+                    一个简单、安全、自由的聊天平台<br>
+                    在这里，分享生活，结识新朋友，探索无限可能
+                </p>
+                <div style="display:flex; gap:16px; margin-bottom:30px; flex-wrap:wrap; justify-content:center; opacity:0; animation:fadeInUp 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.7s forwards;">
+                    <a href="/login" class="btn" style="display:inline-flex; align-items:center; gap:10px; padding:14px 36px; border-radius:50px; font-size:18px; font-weight:600; text-decoration:none; background:linear-gradient(135deg,#7c4dff,#d500f9); color:#ffffff; box-shadow:0 4px 20px rgba(124,77,255,0.4); transition:all 0.3s ease; border:none; cursor:pointer;">
+                        <i class="fas fa-sign-in-alt"></i> 立即登录
+                    </a>
+                    <a href="/signup" class="btn" style="display:inline-flex; align-items:center; gap:10px; padding:14px 36px; border-radius:50px; font-size:18px; font-weight:600; text-decoration:none; background:rgba(255,255,255,0.08); color:#ffffff; border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(10px); transition:all 0.3s ease; cursor:pointer;">
+                        <i class="fas fa-user-plus"></i> 注册账号
+                    </a>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="feature-title">快速连接</div>
+                        <div class="feature-desc">随时随地开启对话</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                        <div class="feature-title">隐私安全</div>
+                        <div class="feature-desc">多重保护你的隐私</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-user-friends"></i></div>
+                        <div class="feature-title">结识新友</div>
+                        <div class="feature-desc">遇见志同道合的人</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fas fa-globe-americas"></i></div>
+                        <div class="feature-title">探索无限</div>
+                        <div class="feature-desc">发现更多精彩世界</div>
+                    </div>
+                </div>
             </div>
-            <p class="brand-subtitle">SIMPLE · SAFE · SOCIAL</p>
-
-            <div class="main-slogan">
-                <span>连接更多 遇见<span class="highlight-text">无限可能</span></span>
+            <div class="right-section">
+                <div class="chat-bubble b1">
+                    <div class="bubble-avatar"><i class="fas fa-user"></i></div>
+                    <span class="bubble-text">Hello! 👋</span>
+                    <span class="bubble-time">12:30</span>
+                </div>
+                <div class="chat-bubble b2">
+                    <div class="bubble-avatar"><i class="fas fa-user"></i></div>
+                    <span class="bubble-text">很高兴认识你！</span>
+                    <span class="bubble-time">12:31</span>
+                </div>
+                <div class="chat-bubble b3">
+                    <div class="bubble-avatar"><i class="fas fa-user"></i></div>
+                    <span class="bubble-text">一起探索更多可能 ✨</span>
+                    <span class="bubble-time">12:32</span>
+                </div>
+                <div class="chat-bubble b4">
+                    <div class="bubble-avatar"><i class="fas fa-user"></i></div>
+                    <span class="bubble-text">Nexus 连接你我 🔗</span>
+                    <span class="bubble-time">12:33</span>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <p class="desc-text">
-                一个简单、安全、自由的聊天平台<br>
-                在这里，分享生活，结识新朋友，探索无限可能
-            </p>
-            <!-- 按钮组 -->
-            <div class="action-buttons" style="display:flex; gap:16px; margin-bottom:30px; flex-wrap:wrap; justify-content:center; opacity:0; animation:fadeInUp 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.7s forwards;">
-                <a href="/login" class="btn btn-primary">
+    <!-- ===== 手机版 ===== -->
+    <div id="mobileIntro">
+        <div class="mobile-container">
+            <div class="mobile-logo">
+                <img src="logo-intro.png" alt="Nexus Logo">
+            </div>
+            <div class="mobile-subtitle">SIMPLE · SAFE · SOCIAL</div>
+            <div class="mobile-slogan">
+                连接更多 遇见<span class="highlight">无限可能</span>
+            </div>
+            <div class="mobile-desc">
+                一个简单、安全、自由的聊天平台，<br/>
+                在这里，分享生活，结识新朋友
+            </div>
+            <div class="mobile-features">
+                <div class="mobile-feature">
+                    <div class="icon"><i class="fas fa-bolt"></i></div>
+                    <div class="name">快速连接</div>
+                    <div class="desc">随时随地开启对话</div>
+                </div>
+                <div class="mobile-feature">
+                    <div class="icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="name">隐私安全</div>
+                    <div class="desc">多重保护你的隐私</div>
+                </div>
+                <div class="mobile-feature">
+                    <div class="icon"><i class="fas fa-user-friends"></i></div>
+                    <div class="name">结识新友</div>
+                    <div class="desc">遇见志同道合的人</div>
+                </div>
+                <div class="mobile-feature">
+                    <div class="icon"><i class="fas fa-globe-americas"></i></div>
+                    <div class="name">探索无限</div>
+                    <div class="desc">发现更多精彩世界</div>
+                </div>
+            </div>
+            <div class="mobile-buttons">
+                <a href="/login" class="mobile-btn primary">
                     <i class="fas fa-sign-in-alt"></i> 立即登录
                 </a>
-                <a href="/signup" class="btn btn-secondary">
+                <a href="/signup" class="mobile-btn secondary">
                     <i class="fas fa-user-plus"></i> 注册账号
                 </a>
             </div>
-
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-bolt"></i></div>
-                    <div class="feature-title">快速连接</div>
-                    <div class="feature-desc">随时随地开启对话</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-                    <div class="feature-title">隐私安全</div>
-                    <div class="feature-desc">多重保护你的隐私</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-user-friends"></i></div>
-                    <div class="feature-title">结识新友</div>
-                    <div class="feature-desc">遇见志同道合的人</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-globe-americas"></i></div>
-                    <div class="feature-title">探索无限</div>
-                    <div class="feature-desc">发现更多精彩世界</div>
-                </div>
-            </div>
+            <div class="mobile-footer">© 2026 Nexus · Made with ❤️</div>
         </div>
-
-        <div class="right-section">
-            <div class="chat-bubble b1">
-                <div class="bubble-avatar"><i class="fas fa-user"></i></div>
-                <span class="bubble-text">Hello! 👋</span>
-                <span class="bubble-time">12:30</span>
-            </div>
-            <div class="chat-bubble b2">
-                <div class="bubble-avatar"><i class="fas fa-user"></i></div>
-                <span class="bubble-text">很高兴认识你！</span>
-                <span class="bubble-time">12:31</span>
-            </div>
-            <div class="chat-bubble b3">
-                <div class="bubble-avatar"><i class="fas fa-user"></i></div>
-                <span class="bubble-text">一起探索更多可能 ✨</span>
-                <span class="bubble-time">12:32</span>
-            </div>
-            <div class="chat-bubble b4">
-                <div class="bubble-avatar"><i class="fas fa-user"></i></div>
-                <span class="bubble-text">Nexus 连接你我 🔗</span>
-                <span class="bubble-time">12:33</span>
-            </div>
-        </div>
-
     </div>
 
 </body>
