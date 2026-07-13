@@ -766,7 +766,9 @@ function hideConfirm() {
             currentUser = profile.profile.username;
             mainPage.classList.add('active');
             await loadProfile();
+            console.log('[init] 准备连接 WebSocket');
             connectWebSocket();
+            console.log('[init] WebSocket 连接函数已调用');
             await loadFriends(true);
             await loadRequestCount();
             startPolling();
