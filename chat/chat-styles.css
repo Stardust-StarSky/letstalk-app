@@ -936,3 +936,112 @@ body {
         scrollbar-color: #3a3a44 #1c1c22;
     }
 }
+/* ===== 移动端适配 ===== */
+@media (max-width: 768px) {
+    #app {
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    /* 好友列表占满屏幕 */
+    #friendList {
+        display: flex !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* 聊天区域默认隐藏 */
+    #chatArea {
+        display: none !important;
+    }
+    #chatArea.active {
+        display: flex !important;
+        flex: 1 !important;
+        width: 100% !important;
+    }
+    #friendList {
+        display: flex !important;
+    }
+
+    /* 显示返回按钮（聊天头部左侧） */
+    .chat-header .back-btn {
+        display: block !important;
+    }
+
+    /* 调整好友列表头部，避免与返回按钮冲突 */
+    .friend-header {
+        padding: 0 16px;
+    }
+
+    /* 消息气泡宽度调整 */
+    .msg-item {
+        max-width: 90% !important;
+    }
+
+    /* 输入框区域适配 */
+    .input-area {
+        padding: 6px 10px;
+        height: 50px;
+        min-height: 50px;
+    }
+    .input-area input {
+        font-size: 14px;
+        height: 34px;
+        padding: 6px 12px;
+    }
+    .input-area .btn-send {
+        height: 34px;
+        padding: 4px 14px;
+        font-size: 14px;
+        min-width: 48px;
+    }
+    .btn-emoji {
+        width: 34px;
+        height: 34px;
+        font-size: 18px;
+    }
+
+    /* 表情面板 */
+    #emojiPanel {
+        max-height: 120px;
+        padding: 4px 8px;
+    }
+    #emojiPanel .emoji-item {
+        font-size: 20px;
+        padding: 2px 4px;
+    }
+
+    /* Toast 通知 */
+    #toastContainer {
+        max-width: 90vw;
+        bottom: 10px;
+    }
+    .toast {
+        max-width: 90vw;
+        min-width: unset;
+        width: auto;
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+
+    /* 侧栏菜单 */
+    .side-menu-content {
+        width: 260px;
+        max-width: 85%;
+    }
+
+    /* 模态框 */
+    .modal-box {
+        width: 95%;
+        padding: 20px 16px;
+    }
+    #friendList.hidden-mobile{
+        display:none !important;
+    }
+
+    #chatArea.active{
+        display:flex !important;
+    }
+}

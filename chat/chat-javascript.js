@@ -319,17 +319,30 @@ function hideConfirm() {
     }
     function selectFriend(friend) {
         if (!friend) return;
+
         const trim = friend.trim();
         currentFriend = trim;
+
         const obj = friends.find(f => f.username === trim);
-        const displayName = obj?.nickname || trim;
-        chatFriendName.textContent = displayName;
-        chatArea.classList.add('active');
-        if (unreadCountMap[trim]) unreadCountMap[trim] = 0;
+        chatFriendName.textContent = obj?.nickname || trim;
+
+        if (window.innerWidth <= 768) {
+            const friendList = document.getElementById('friendList');
+
+            friendList.classList.add('hidden-mobile');
+            chatArea.classList.add('active');
+        } else {
+            chatArea.classList.add('active');
+        }
+
         renderVersion++;
         const ver = renderVersion;
-        messageBox.innerHTML = '<div class="empty-state">加载中...</div>';
+
+        messageBox.innerHTML =
+            '<div class="empty-state">加载中...</div>';
+
         messagesCache[trim] = [];
+
         renderFriendList();
         loadMessages(trim, ver);
         markAsRead(trim);
@@ -752,7 +765,29 @@ function hideConfirm() {
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => {}, 1000);
     });
-    backBtn?.addEventListener('click', () => chatArea.classList.remove('active'));
+    backBtn?.addEventListener('click', () => {
+
+        // 隐藏聊天
+        chatArea.classList.remove('active');
+        chatArea.style.display = 'none';
+
+        // 手机端恢复好友列表
+        if (window.innerWidth <= 768) {
+
+            const friendList = document.getElementById('friendList');
+
+            if(friendList){
+                friendList.classList.remove('hidden-mobile');
+                friendList.style.removeProperty('display');
+                friendList.style.display = 'flex';
+            }
+
+            // 清除聊天区域残留样式
+            chatArea.style.removeProperty('width');
+            chatArea.style.removeProperty('flex');
+        }
+
+    });
     addFriendBtn?.addEventListener('click', () => openModal('addFriendModal'));
     aboutBtn?.addEventListener('click', () => openModal('aboutModal'));
     document.getElementById('closeAboutBtn')?.addEventListener('click', () => closeModal('aboutModal'));
