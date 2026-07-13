@@ -8,6 +8,7 @@ body {
     background: #f0f2f5;
     height: 100vh;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
@@ -17,8 +18,8 @@ body {
     background: white;
     border-radius: 28px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-    max-width: 90vw;
-    max-height: 90vh;
+    max-width: 95vw;
+    max-height: 95vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -41,7 +42,6 @@ body {
     min-width: 200px;
     max-width: 320px;
     background: #f8fafc;
-    border-right: 1px solid #e9edf2;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -79,16 +79,6 @@ body {
     height: 32px;
 }
 .friend-header-btn.about:hover { background: #2563eb; }
-.friend-header-btn.add {
-    background: #3b82f6;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    padding: 0;
-}
-.friend-header-btn.add:hover { background: #2563eb; }
-.friend-header-btn.add svg { stroke: white; }
 
 #requestEntry {
     padding: 8px 18px;
@@ -117,6 +107,8 @@ body {
     padding: 8px 0;
 }
 .friend-item {
+    margin: 0 10px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     padding: 12px 18px;
@@ -126,8 +118,7 @@ body {
 }
 .friend-item:hover { background: #f1f5f9; }
 .friend-item.active {
-    background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.12));
-    border-left: 3px solid #8b5cf6;
+    background: linear-gradient(135deg, rgba(157, 119, 246, 0.2), rgba(59,130,246,0.2));
 }
 .friend-item .avatar {
     width: 44px;
@@ -145,16 +136,8 @@ body {
 }
 .friend-item .info { flex: 1; min-width: 0; }
 .friend-item .info .name { font-weight: 500; color: #1e293b; font-size: 16px; }
-.friend-item .info .last-msg {
-    font-size: 14px;
-    color: #64748b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.friend-item .time { font-size: 12px; color: #94a3b8; flex-shrink: 0; margin-left: 8px; }
 .unread-badge {
-    background: #ef4444;
+    background: #4f71f9;
     color: white;
     border-radius: 50%;
     padding: 1px 6px;
@@ -189,15 +172,20 @@ body {
 
 /* 聊天区域 */
 #chatArea {
+    border-radius: 30px;
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: white;
+    background: #ffffff;
+    margin: 10px;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 .chat-header {
     padding: 8px 20px;
-    border-bottom: 1px solid #e9edf2;
+    border: 1px solid #e9edf2;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -209,23 +197,10 @@ body {
 .chat-header .back-btn { display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #475569; padding: 0 4px; }
 .chat-header .friend-name { font-size: 18px; font-weight: 600; color: #1e293b; flex: 1; }
 .chat-header .actions { display: flex; gap: 8px; }
-.chat-header .actions button {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-    color: #64748b;
-    padding: 4px 8px;
-    border-radius: 8px;
-    transition: 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-}
-.chat-header .actions button:hover { background: #f1f5f9; }
 
 .message-box {
+    border-left: 1px solid #e9edf2;
+    border-right: 1px solid #e9edf2;
     flex: 1;
     padding: 16px 12px;
     overflow-y: auto;
@@ -269,7 +244,7 @@ body {
 /* 输入区 */
 .input-area {
     padding: 6px 12px;
-    border-top: 1px solid #e9edf2;
+    border: 1px solid #e9edf2;
     display: flex;
     gap: 6px;
     background: white;
@@ -277,6 +252,8 @@ body {
     align-items: center;
     min-height: 56px;
     height: 56px;
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
 }
 .input-area input {
     flex: 1;
@@ -593,7 +570,6 @@ body {
     padding: 8px 0;
     border-bottom: 1px solid #f1f5f9;
 }
-.request-item .actions button { background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 8px; }
 .request-item .actions .accept { color: #22c55e; }
 .request-item .actions .reject { color: #ef4444; }
 
@@ -615,8 +591,8 @@ body {
     word-wrap: break-word;
 }
 .toast.info { border-left-color: #3b82f6; }
-.toast.success { border-left-color: #22c55e; }  /* 绿色 */
-.toast.warn    { border-left-color: #f59e0b; }  /* 橙色 */
+.toast.success { border-left-color: #22c55e; }
+.toast.warn    { border-left-color: #f59e0b; }
 @keyframes slideUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -717,47 +693,89 @@ body {
 #replyBarClose {
     color: black;
 }
+
+/* 顶部栏 */
+#topBar {
+    color: black;
+    height:64px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:5px 20px 0 15px;
+    background: white;
+    border-bottom:1px solid #e9edf2;
+}
+.brand {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#logo {
+    width:220px;
+    height:45px;
+    object-fit:contain;
+}
+.topActions {
+    display:flex;
+    gap:12px;
+}
+.roundedBtn {
+    display: flex;
+    width:38px;
+    height:38px;
+    border:none;
+    border-radius:50%;
+    background:transparent;
+    cursor:pointer;
+    font-size:18px;
+    justify-content: center;
+    align-items: center;
+    color: #475569;
+}
+.roundedBtn:hover {
+    background: rgba(128,128,128,.15);
+}
+#addFriendBtn,
+#settingsBtn {
+    justify-content: center;
+    align-items: center;
+}
+
 /* 暗色主题 */
 @media (prefers-color-scheme: dark) {
     body { background: #0f0f12; }
-    #app { background: #1c1c22; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
-    #friendList { background: #16161d; border-right-color: #2a2a32; }
-    .friend-header { background: #1c1c22; border-bottom-color: #2a2a32; }
+    #app { background: #081737; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    #friendList { background: #081737; border-right-color: #2a2a32; }
+    .friend-header { background: #081737; border-bottom-color: #2a2a32; }
     .friend-header span { color: #f1f5f9; }
     .friend-header-btn.about { background: #2563eb; }
     .friend-header-btn.about:hover { background: #1d4ed8; }
-    .friend-header-btn.add { background: #2563eb; }
-    .friend-header-btn.add:hover { background: #1d4ed8; }
     .friend-item { border-bottom-color: #2a2a32; }
     .friend-item:hover { background: #2a2a32; }
     .friend-item.active {
-        background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.2));
-        border-left: 3px solid #8b5cf6;
+        background: linear-gradient(135deg, #573e9c, #253161);
     }
     .friend-item .info .name { color: #f1f5f9; }
-    .friend-item .info .last-msg { color: #94a3b8; }
     .friend-item .time { color: #64748b; }
-    .user-footer { background: #1c1c22; border-top-color: #2a2a32; }
+    .user-footer { background: #081737; border-top-color: #2a2a32; }
     .user-footer #myUsername { color: #f1f5f9; }
     .user-footer .logout-btn { background: #2a2a32; color: #cbd5e1; }
     .user-footer .logout-btn:hover { background: #3a3a44; }
-    #chatArea { background: #1c1c22; }
-    .chat-header { background: #1c1c22; border-bottom-color: #2a2a32; }
+    #chatArea { background: #203169; }
+    .chat-header { background: linear-gradient(90deg, #2f2e68, #203169); border-bottom-color: #2a2a32; border: none; }
     .chat-header .friend-name { color: #f1f5f9; }
-    .chat-header .actions button { color: #94a3b8; }
-    .chat-header .actions button:hover { background: #2a2a32; }
-    .message-box { background: #16161d; }
+    .message-box { background: linear-gradient(90deg, #2f2e68, #203169); border: none; }
     .msg-item { background: #2a2a32; border-color: #3a3a44; color: #e2e8f0; }
     .msg-item.me { background: #1d4ed8; border-color: #1d4ed8; color: white; }
     .time-label { color: #64748b; }
-    .input-area { background: #1c1c22; border-top-color: #2a2a32; }
-    .input-area input { background: #2a2a32; border-color: #3a3a44; color: #f1f5f9; }
+    .input-area { background: linear-gradient(90deg, #2f2e68, #203169); border-top-color: #2a2a32; border: none; }
+    .input-area input { background: #17234b; border-color: #3a3a44; color: #f1f5f9; }
     .input-area input:focus { border-color: #3b82f6; background: #2a2a32; }
     .input-area .btn-send { background: #2563eb; }
-    #emojiPanel { background: #1c1c22 !important; border-top-color: #2a2a32 !important; }
+    #emojiPanel { background: #081737 !important; border-top-color: #2a2a32 !important; }
     .btn-emoji:hover { background: #2b2b34; }
     #replyBar {
-        background: #1c1c22 !important;
+        background: #081737 !important;
         border-top-color: #2a2a32 !important;
         color: #94a3b8 !important;
     }
@@ -771,9 +789,9 @@ body {
     #customMenu .menu-item { color: #e2e8f0; }
     #customMenu .menu-item:hover { background: #334155; }
     #customMenu .menu-item:not(:last-child) { border-bottom-color: #334155; }
-    #profileModal .modal-box input:disabled { background: #2a2a32 !important; color: #94a3b8 !important; }
+    #profileModal .modal-box input:disabled { background: #0d2048 !important; color: #94a3b8 !important; }
     #profileModal .modal-box label { color: #cbd5e1 !important; }
-    #profileModal .modal-box input:not([disabled]) { background: #2a2a32; border-color: #3a3a44; color: #f1f5f9; }
+    #profileModal .modal-box input:not([disabled]) { background: #081737; border-color: #3a3a44; color: #f1f5f9; }
     /* 强制覆盖模态框暗色样式 */
     .modal-overlay {
         background: rgba(0, 0, 0, 0.75) !important;
@@ -782,7 +800,7 @@ body {
     }
     .modal-overlay .modal-box,
     .modal-box {
-        background: #1c1c22 !important;
+        background: #081737 !important;
         color: #f1f5f9 !important;
         box-shadow: 0 10px 40px rgba(0,0,0,0.8) !important;
     }
@@ -796,7 +814,7 @@ body {
     }
     .modal-overlay .modal-box input,
     .modal-box input {
-        background: #2a2a32 !important;
+        background: #06122a !important;
         border-color: #3a3a44 !important;
         color: #f1f5f9 !important;
     }
@@ -812,7 +830,7 @@ body {
     }
     .modal-overlay .modal-box .btn-row .btn-secondary,
     .modal-box .btn-row .btn-secondary {
-        background: #2a2a32 !important;
+        background: #0c2252 !important;
         color: #cbd5e1 !important;
     }
     .modal-overlay .modal-box .btn-row .btn-secondary:hover,
@@ -841,10 +859,6 @@ body {
     .modal-box .request-item {
         border-bottom-color: #2a2a32 !important;
     }
-    .modal-overlay .modal-box .request-item .actions button,
-    .modal-box .request-item .actions button {
-        color: #94a3b8 !important;
-    }
     .modal-overlay .modal-box .request-item .actions .accept,
     .modal-box .request-item .actions .accept {
         color: #4ade80 !important;
@@ -863,7 +877,7 @@ body {
     }
     /* 侧栏菜单暗色适配 */
     .chat-side-menu .side-menu-content {
-        background: #1c1c22 !important;
+        background: #081737 !important;
         border-left: 1px solid #2a2a32 !important;
     }
     .chat-side-menu .side-menu-header {
@@ -892,7 +906,7 @@ body {
         background: rgba(0, 0, 0, 0.7) !important;
     }
     #customConfirm .box {
-        background: #1c1c22;
+        background: #081737;
     }
     #customConfirm .box .title {
         color: #f1f5f9;
@@ -901,12 +915,12 @@ body {
         color: #94a3b8;
     }
     #customConfirm .box .row .cancel {
-        background: #2a2a32;
+        background: #0c2251;
         border-color: #3a3a44;
         color: #cbd5e1;
     }
     #customConfirm .box .row .cancel:hover {
-        background: #3a3a44;
+        background: #112f72;
     }
     #customConfirm .box .row .ok {
         background: #2563eb;
@@ -920,7 +934,7 @@ body {
         height: 6px;
     }
     ::-webkit-scrollbar-track {
-        background: #1c1c22;
+        background: #081737;
     }
     ::-webkit-scrollbar-thumb {
         background: #3a3a44;
@@ -929,13 +943,26 @@ body {
     ::-webkit-scrollbar-thumb:hover {
         background: #4a4a54;
     }
-
     /* Firefox 滚动条 */
     * {
         scrollbar-width: thin;
-        scrollbar-color: #3a3a44 #1c1c22;
+        scrollbar-color: #3a3a44 #081737;
+    }
+    .icon {
+        fill: white;
+    }
+    #topBar {
+        background: #081737;
+        border-bottom-color: #2a2a32;
+    }
+    .roundedBtn {
+        color: #94a3b8;
+    }
+    .roundedBtn:hover {
+        background: rgba(255,255,255,0.08);
     }
 }
+
 /* ===== 移动端适配 ===== */
 @media (max-width: 768px) {
     #app {
@@ -1040,7 +1067,6 @@ body {
     #friendList.hidden-mobile{
         display:none !important;
     }
-
     #chatArea.active{
         display:flex !important;
     }

@@ -12,9 +12,9 @@
     const backBtn = document.getElementById('backBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const myUsernameSpan = document.getElementById('myUsername');
-    const addFriendBtn = document.getElementById('addFriendBtnHeader');
+    const addFriendBtn = document.getElementById('addFriendBtn');
     const aboutBtn = document.getElementById('aboutBtnFriend');
-    const profileBtn = document.getElementById('profileBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
     const customMenu = document.getElementById('customMenu');
     const menuRecall = document.getElementById('menuRecall');
     const menuReply = document.getElementById('menuReply');
@@ -276,8 +276,11 @@ function hideConfirm() {
     }
 
     // ---- 好友 ----
-    async function loadFriends() {
-        friendListContainer.innerHTML = '<div class="empty-state">加载中...</div>';
+    async function loadFriends(showLoading = true) {
+        // 只在明确需要显示加载时设置（首次加载）
+        if (showLoading) {
+            friendListContainer.innerHTML = '<div class="empty-state">加载中...</div>';
+        }
         try {
             const res = await apiCall('/friends');
             if (res.friends && Array.isArray(res.friends)) {
@@ -286,10 +289,14 @@ function hideConfirm() {
                 for (const f of friends) { if (f.unread > 0) unreadCountMap[f.username] = f.unread; }
                 renderFriendList();
             } else {
-                friendListContainer.innerHTML = '<div class="empty-state">数据异常</div>';
+                if (showLoading) {
+                    friendListContainer.innerHTML = '<div class="empty-state">数据异常</div>';
+                }
             }
         } catch (e) {
-            friendListContainer.innerHTML = '<div class="empty-state">加载失败，请刷新</div>';
+            if (showLoading) {
+                friendListContainer.innerHTML = '<div class="empty-state">加载失败，请刷新</div>';
+            }
         }
     }
     function renderFriendList() {
@@ -668,6 +675,7 @@ function hideConfirm() {
 
     // ---- 轮询 ----
     function startPolling() {
+        // 消息轮询（1秒）
         if (window._pollTimer) clearInterval(window._pollTimer);
         window._pollTimer = setInterval(() => {
             if (!currentToken || !currentFriend) return;
@@ -675,9 +683,8 @@ function hideConfirm() {
             const ver = renderVersion;
             apiCall(`/messages?friend=${encodeURIComponent(friend)}`)
                 .then(res => {
-                    // 检查是否仍然在当前好友和版本上
                     if (friend !== currentFriend || ver !== renderVersion) {
-                        console.log('[轮询] 忽略过期请求', { friend, currentFriend, ver, renderVersion });
+                        console.log('[轮询] 忽略过期请求');
                         return;
                     }
                     if (res.messages) {
@@ -701,14 +708,24 @@ function hideConfirm() {
                 .catch(() => {});
         }, 1000);
 
+        // 申请轮询（5秒）
         if (window._reqPollTimer) clearInterval(window._reqPollTimer);
         window._reqPollTimer = setInterval(() => {
             if (currentToken) loadRequestCount().catch(() => {});
         }, 5000);
+
+        // ✅ 新增：好友列表轮询（15秒，作为 WebSocket 的备用）
+        if (window._friendPollTimer) clearInterval(window._friendPollTimer);
+        window._friendPollTimer = setInterval(() => {
+            if (currentToken) {
+                loadFriends(false);
+            }
+        }, 15000);
     }
     function stopPolling() {
         clearInterval(window._pollTimer);
         clearInterval(window._reqPollTimer);
+        clearInterval(window._friendPollTimer); 
     }
 
     // ---- 初始化 ----
@@ -731,7 +748,7 @@ function hideConfirm() {
         mainPage.classList.add('active');
         await loadProfile();
         connectWebSocket();
-        await loadFriends();
+        await loadFriends(true);
         await loadRequestCount();
         startPolling();
         debugLog('聊天初始化完成', 'ok');
@@ -891,7 +908,7 @@ function hideConfirm() {
                         await apiCall('/messages/clear', 'POST', { friend: currentFriend });
                         messagesCache[currentFriend] = [];
                         renderMessages(currentFriend, renderVersion);
-                        await loadFriends();
+                        await loadFriends(false);
                     } catch (e) { alert('清空失败: ' + e.message); }
                 }
             }, true);
@@ -966,8 +983,8 @@ function hideConfirm() {
     });
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     // 个人设置
-    profileBtn?.addEventListener('click', () => openModal('profileModal'));
-    document.getElementById('closeProfileBtn')?.addEventListener('click', () => closeModal('profileModal'));
+    settingsBtn?.addEventListener('click', () => openModal('profileModal'));
+    document.getElementById('closeSettingsBtn')?.addEventListener('click', () => closeModal('profileModal'));
     document.getElementById('profileModal')?.addEventListener('click', function(e) {
         if (e.target === e.currentTarget) {
             e.target.classList.add('closing');
