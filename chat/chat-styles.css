@@ -190,12 +190,35 @@ body {
     align-items: center;
     gap: 12px;
     flex-shrink: 0;
-    background: white;
+    background: linear-gradient(90deg, #f3f1ff, #eff5ff);
     min-height: 56px;
     height: 56px;
 }
 .chat-header .back-btn { display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #475569; padding: 0 4px; }
-.chat-header .friend-name { font-size: 18px; font-weight: 600; color: #1e293b; flex: 1; }
+.chat-header .friend-name-btn {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+    transition: 0.15s;
+}
+.chat-header .friend-name-btn:hover {
+    color: #3b82f6;
+}
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+    .chat-header .friend-name-btn {
+        color: #f1f5f9;
+    }
+    .chat-header .friend-name-btn:hover {
+        color: #60a5fa;
+    }
+}
 .chat-header .actions { display: flex; gap: 8px; }
 
 .message-box {
@@ -207,7 +230,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    background: #f8fafc;
+    background: linear-gradient(90deg, #f3f1ff, #eff5ff);
 }
 .msg-item {
     max-width: 80%;
@@ -247,7 +270,7 @@ body {
     border: 1px solid #e9edf2;
     display: flex;
     gap: 6px;
-    background: white;
+    background: linear-gradient(90deg, #f3f1ff, #eff5ff);
     flex-shrink: 0;
     align-items: center;
     min-height: 56px;
@@ -262,14 +285,13 @@ body {
     border-radius: 30px;
     font-size: 15px;
     outline: none;
-    background: #f8fafc;
+    background: linear-gradient(90deg, #f8f7ff, #f7faff);
     transition: 0.2s;
     height: 38px;
 }
 .input-area input:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-    background: white;
 }
 .input-area .btn-send {
     background: #3b82f6;
@@ -703,7 +725,6 @@ body {
     justify-content:space-between;
     padding:5px 20px 0 15px;
     background: white;
-    border-bottom:1px solid #e9edf2;
 }
 .brand {
     display: flex;
@@ -746,12 +767,8 @@ body {
     body { background: #0f0f12; }
     #app { background: #081737; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
     #friendList { background: #081737; border-right-color: #2a2a32; }
-    .friend-header { background: #081737; border-bottom-color: #2a2a32; }
-    .friend-header span { color: #f1f5f9; }
-    .friend-header-btn.about { background: #2563eb; }
-    .friend-header-btn.about:hover { background: #1d4ed8; }
     .friend-item { border-bottom-color: #2a2a32; }
-    .friend-item:hover { background: #2a2a32; }
+    .friend-item:hover { background: #0f2452; }
     .friend-item.active {
         background: linear-gradient(135deg, #573e9c, #253161);
     }
@@ -835,7 +852,7 @@ body {
     }
     .modal-overlay .modal-box .btn-row .btn-secondary:hover,
     .modal-box .btn-row .btn-secondary:hover {
-        background: #3a3a44 !important;
+        background: #102e6e !important;
     }
     .modal-overlay .modal-box .btn-row .btn-primary,
     .modal-box .btn-row .btn-primary {
@@ -953,7 +970,6 @@ body {
     }
     #topBar {
         background: #081737;
-        border-bottom-color: #2a2a32;
     }
     .roundedBtn {
         color: #94a3b8;
@@ -1069,5 +1085,8 @@ body {
     }
     #chatArea.active{
         display:flex !important;
+    }
+    #chatArea.active ~ #topBar {
+        display: none !important;
     }
 }

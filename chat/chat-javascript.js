@@ -19,6 +19,11 @@
     const menuRecall = document.getElementById('menuRecall');
     const menuReply = document.getElementById('menuReply');
     const toastContainer = document.getElementById('toastContainer');
+    const friendProfileModal = document.getElementById('friendProfileModal');
+    const closeFriendProfileBtn = document.getElementById('closeFriendProfileBtn');
+    const fpUsername = document.getElementById('fpUsername');
+    const fpNickname = document.getElementById('fpNickname');
+    const fpBio = document.getElementById('fpBio');
 
     // ---- 状态 ----
     let currentUser = null;
@@ -334,6 +339,7 @@ function hideConfirm() {
         chatFriendName.textContent = obj?.nickname || trim;
 
         if (window.innerWidth <= 768) {
+            document.getElementById('topBar').style.display = 'none';
             const friendList = document.getElementById('friendList');
 
             friendList.classList.add('hidden-mobile');
@@ -494,6 +500,22 @@ function hideConfirm() {
                 }
             });
         }, 10);
+    }
+    async function showFriendProfile() {
+        if (!currentFriend) return;
+        try {
+            const res = await apiCall(`/user/profile?username=${encodeURIComponent(currentFriend)}`);
+            if (res.success && res.profile) {
+                fpUsername.textContent = res.profile.username;
+                fpNickname.textContent = res.profile.nickname || '未设置';
+                fpBio.textContent = res.profile.bio || '这个人很懒，什么都没写';
+                openModal('friendProfileModal');
+            } else {
+                showToast('加载资料失败', 'error');
+            }
+        } catch (e) {
+            showToast('加载资料失败: ' + e.message, 'error');
+        }
     }
     function showReplyIndicator(msgId) {
         console.log('[引用] 开始显示引用, msgId:', msgId);
@@ -792,6 +814,7 @@ function hideConfirm() {
         if (window.innerWidth <= 768) {
 
             const friendList = document.getElementById('friendList');
+            document.getElementById('topBar').style.display = 'flex';
 
             if(friendList){
                 friendList.classList.remove('hidden-mobile');
@@ -807,6 +830,11 @@ function hideConfirm() {
     });
     addFriendBtn?.addEventListener('click', () => openModal('addFriendModal'));
     aboutBtn?.addEventListener('click', () => openModal('aboutModal'));
+    chatFriendName?.addEventListener('click', showFriendProfile);
+    closeFriendProfileBtn?.addEventListener('click', () => closeModal('friendProfileModal'));
+    friendProfileModal?.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal('friendProfileModal');
+    });
     document.getElementById('closeAboutBtn')?.addEventListener('click', () => closeModal('aboutModal'));
     document.getElementById('aboutModal')?.addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closeModal('aboutModal');

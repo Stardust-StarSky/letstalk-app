@@ -39,10 +39,11 @@
         <div class="modal-box">
             <h3>关于</h3>
             <div cstyle="margin:12px 0; line-height:1.8;">
-                <p><strong>版本：正式版 1.10.2</strong></p>
+                <p><strong>版本：正式版 1.11.0</strong></p>
                 <p>更新内容：</p>
                 <ul style="padding-left:20px; color:var(--accent-color, #3689fe);">
                     <li>修饰界面</li>
+                    <li>添加 查看好友信息 功能</li>
                 </ul>
                 <p style="margin-top:12px; color:#94a3b8;">© 2026 Nexus</p>
             </div>
@@ -97,12 +98,6 @@
         <div class="content-row">
             
             <div id="friendList">
-                <div class="friend-header">
-                    <span>好友</span>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <button id="aboutBtnFriend" class="friend-header-btn about">关于</button>
-                    </div>
-                </div>
                 <div id="requestEntry">
                     <span>📩 好友申请</span>
                     <span class="badge" id="requestBadge">0</span>
@@ -119,7 +114,7 @@
                 <!-- 原有聊天区域，保留 chat-header -->
                 <div class="chat-header">
                     <button class="back-btn" id="backBtn">‹</button>
-                    <span class="friend-name" id="chatFriendName">选择好友</span>
+                    <button class="friend-name-btn" id="chatFriendName" title="点击查看好友资料">选择好友</button>
                     <div class="actions">
                         <button class="roundedBtn" id="menuToggleBtn" title="更多操作">
                             <svg t="1783933655400" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="20041" width="23" height="23"><path d="M170.666667 170.666667a42.666667 42.666667 0 0 0-42.666667 42.666666 42.666667 42.666667 0 0 0 42.666667 42.666667h682.666666a42.666667 42.666667 0 0 0 42.666667-42.666667 42.666667 42.666667 0 0 0-42.666667-42.666666zM170.666667 469.333333a42.666667 42.666667 0 0 0-42.666667 42.666667 42.666667 42.666667 0 0 0 42.666667 42.666667h682.666666a42.666667 42.666667 0 0 0 42.666667-42.666667 42.666667 42.666667 0 0 0-42.666667-42.666667zM170.666667 768a42.666667 42.666667 0 0 0-42.666667 42.666667 42.666667 42.666667 0 0 0 42.666667 42.666666h682.666666a42.666667 42.666667 0 0 0 42.666667-42.666666 42.666667 42.666667 0 0 0-42.666667-42.666667z" p-id="20042"></path></svg>
@@ -193,6 +188,21 @@
             <div class="row">
                 <button class="cancel" id="confirmCancel">取消</button>
                 <button class="ok" id="confirmOk">确定</button>
+            </div>
+        </div>
+    </div>
+    <!-- 好友资料模态框 -->
+    <div class="modal-overlay" id="friendProfileModal">
+        <div class="modal-box" style="max-width: 380px;">
+            <h3>好友资料</h3>
+            <div style="margin-top: 16px; line-height: 2;">
+                <div><strong>账号：</strong><span id="fpUsername">-</span></div>
+                <div><strong>昵称：</strong><span id="fpNickname">-</span></div>
+                <div><strong>个性签名：</strong><span id="fpBio">这个人很懒，什么都没写</span></div>
+                <!-- 可扩展更多字段 -->
+            </div>
+            <div class="btn-row" style="margin-top: 16px;">
+                <button class="btn-secondary" id="closeFriendProfileBtn">关闭</button>
             </div>
         </div>
     </div>
