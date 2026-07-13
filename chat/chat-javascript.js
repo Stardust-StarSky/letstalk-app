@@ -750,33 +750,33 @@ function hideConfirm() {
 
     // ---- 初始化 ----
     async function init() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = '/login';
-        return;
-    }
-    currentToken = token;
-    try {
-        const profile = await apiCall('/profile');
-        if (!profile.success) {
-            localStorage.removeItem('token');
+        const token = localStorage.getItem('token');
+        if (!token) {
             window.location.href = '/login';
             return;
         }
-        currentUser = profile.profile.username;
-        mainPage.classList.add('active');
-        await loadProfile();
-        connectWebSocket();
-        await loadFriends(true);
-        await loadRequestCount();
-        startPolling();
-        debugLog('聊天初始化完成', 'ok');
-    } catch (e) {
-        console.error('[init] 错误:', e);
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        currentToken = token;
+        try {
+            const profile = await apiCall('/profile');
+            if (!profile.success) {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+                return;
+            }
+            currentUser = profile.profile.username;
+            mainPage.classList.add('active');
+            await loadProfile();
+            connectWebSocket();
+            await loadFriends(true);
+            await loadRequestCount();
+            startPolling();
+            debugLog('聊天初始化完成', 'ok');
+        } catch (e) {
+            console.error('[init] 错误:', e);
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
     }
-}
     async function loadProfile() {
         try {
             const res = await apiCall('/profile');
@@ -786,6 +786,8 @@ function hideConfirm() {
                 document.getElementById('profileNickname').value = p.nickname || '';
                 document.getElementById('profileBio').value = p.bio || '';
                 document.getElementById('profileEmail').value = p.email || '';
+                // 由于已移除 user-footer，不再需要设置底部用户名
+                // myUsernameSpan.textContent = p.nickname || p.username;
             }
         } catch (e) {}
     }
