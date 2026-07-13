@@ -750,27 +750,37 @@ function hideConfirm() {
 
     // ---- 初始化 ----
     async function init() {
+        console.log('[init] 开始');
         const token = localStorage.getItem('token');
+        console.log('[init] token:', token ? '存在' : '无');
         if (!token) {
+            console.log('[init] 无 token，跳转登录');
             window.location.href = '/login';
             return;
         }
         currentToken = token;
         try {
+            console.log('[init] 正在获取 profile...');
             const profile = await apiCall('/profile');
+            console.log('[init] profile 响应:', profile);
             if (!profile.success) {
+                console.warn('[init] profile.success 为 false');
                 localStorage.removeItem('token');
                 window.location.href = '/login';
                 return;
             }
             currentUser = profile.profile.username;
+            console.log('[init] currentUser:', currentUser);
             mainPage.classList.add('active');
+            console.log('[init] 正在加载个人资料...');
             await loadProfile();
-            console.log('[init] 准备连接 WebSocket');
+            console.log('[init] 正在连接 WebSocket...');
             connectWebSocket();
-            console.log('[init] WebSocket 连接函数已调用');
+            console.log('[init] 正在加载好友列表...');
             await loadFriends(true);
+            console.log('[init] 正在加载申请数...');
             await loadRequestCount();
+            console.log('[init] 正在启动轮询...');
             startPolling();
             debugLog('聊天初始化完成', 'ok');
         } catch (e) {
@@ -780,18 +790,14 @@ function hideConfirm() {
         }
     }
     async function loadProfile() {
-        try {
-            const res = await apiCall('/profile');
-            if (res.success) {
-                const p = res.profile;
-                document.getElementById('profileUsername').value = p.username;
-                document.getElementById('profileNickname').value = p.nickname || '';
-                document.getElementById('profileBio').value = p.bio || '';
-                document.getElementById('profileEmail').value = p.email || '';
-                // 由于已移除 user-footer，不再需要设置底部用户名
-                // myUsernameSpan.textContent = p.nickname || p.username;
-            }
-        } catch (e) {}
+        const res = await apiCall('/profile');
+        if (res.success) {
+            const p = res.profile;
+            document.getElementById('profileUsername').value = p.username;
+            document.getElementById('profileNickname').value = p.nickname || '';
+            document.getElementById('profileBio').value = p.bio || '';
+            document.getElementById('profileEmail').value = p.email || '';
+        }
     }
 
     // ---- 事件绑定 ----
