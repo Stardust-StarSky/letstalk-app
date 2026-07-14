@@ -270,74 +270,145 @@ body {
 /* 输入区 */
 .input-area {
     padding: 6px 12px;
-    border: 1px solid #e9edf2;
+    border-top: 1px solid #e9edf2;
     display: flex;
-    gap: 6px;
     background: linear-gradient(90deg, #f3f1ff, #eff5ff);
     flex-shrink: 0;
     align-items: center;
-    min-height: 56px;
-    height: 56px;
-    border-bottom-left-radius: 30px;
-    border-bottom-right-radius: 30px;
+    min-height: 62px;
+    height: 62px;
 }
-.input-area input {
+
+/* 输入框容器（模仿输入框背景） */
+.input-wrapper {
+    position: relative;
     flex: 1;
-    padding: 8px 14px;
+    height: 100%;
+    background: none;
+    border-radius: 31px;
     border: 1px solid #d1d9e6;
-    border-radius: 30px;
-    font-size: 15px;
-    outline: none;
-    background: linear-gradient(90deg, #f8f7ff, #f7faff);
-    transition: 0.2s;
-    height: 38px;
-}
-.input-area input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-}
-.input-area .btn-send {
-    background: #3b82f6;
-    border: none;
-    color: white;
-    padding: 6px 18px;
-    height: 38px;
-    border-radius: 20px;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: 0.15s;
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    min-width: 56px;
-    box-shadow: 0 2px 8px rgba(59,130,246,0.25);
 }
-.input-area .btn-send:active { transform: scale(0.95); }
-.btn-emoji {
+
+.input-wrapper input {
+    border-radius: 31px;
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 15px;
+    padding-right: 85px; /* 为两个按钮留出空间 */
+    padding-left: 20px;
+    color: #1e293b;
+}
+
+.input-wrapper input::placeholder {
+    color: #94a3b8;
+}
+
+/* 表情按钮（在输入框内部） */
+.input-wrapper .btn-emoji {
+    position: absolute;
+    right: 50px; /* 发送按钮宽度 + 间距 */
+    top: 50%;
+    transform: translateY(-50%);
     background: none;
     border: none;
     font-size: 22px;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     cursor: pointer;
     transition: 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
     color: #64748b;
+    padding: 0;
+    z-index: 2;
 }
-.btn-emoji:hover { background: #f1f5f9; }
-.btn-emoji:active { transform: scale(0.92); }
+
+.input-wrapper .btn-emoji:hover {
+    background: #f1f5f9;
+}
+
+.input-wrapper .btn-emoji:active {
+    transform: translateY(-50%) scale(0.92);
+}
+
+/* 发送按钮（在输入框内部） */
+.input-wrapper .btn-send {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #3b82f6;
+    border: none;
+    color: white;
+    height: 40px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.25);
+    z-index: 2;
+}
+
+.input-wrapper .btn-send:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.input-wrapper .btn-send:hover {
+    background: #2563eb;
+}
+.input-wrapper .btn-send svg {
+    fill: #ffffff;
+}
+
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+    .input-area {
+        background: #1c1c22;
+        border-top-color: #2a2a32;
+    }
+    .input-wrapper {
+        background: #2a2a32;
+        border-color: #3a3a44;
+    }
+    .input-wrapper input {
+        color: #f1f5f9;
+    }
+    .input-wrapper input::placeholder {
+        color: #64748b;
+    }
+    .input-wrapper .btn-emoji {
+        color: #94a3b8;
+    }
+    .input-wrapper .btn-emoji:hover {
+        background: #3a3a44;
+    }
+    .input-wrapper .btn-send {
+        background: #2563eb;
+    }
+    .input-wrapper .btn-send:hover {
+        background: #1d4ed8;
+    }
+}
 
 /* 表情面板 */
 #emojiPanel {
     display: none;
     padding: 8px 12px;
-    background: white;
+    margin: 0 5px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #f3f1ff, #eff5ff);
     border-top: 1px solid #e9edf2;
     flex-wrap: wrap;
     gap: 4px;
@@ -763,6 +834,49 @@ body {
     justify-content: center;
     align-items: center;
 }
+/*彩蛋*/
+.friend-footer {
+    height: 44px;
+    min-height: 44px;
+    border-top: 1px solid #e9edf2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #f8fafc;
+    padding: 0 16px;
+}
+.friend-footer .version-display {
+    font-size: 12px;
+    color: #94a3b8;
+    cursor: pointer;
+    user-select: none;
+    transition: 0.15s;
+    padding: 4px 10px;
+    border-radius: 4px;
+    line-height: 1;
+}
+.friend-footer .version-display:hover {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+}
+.friend-footer .version-display:active {
+    transform: scale(0.95);
+}
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+    .friend-footer {
+        background: #081737;
+        border-top-color: #2a2a32;
+    }
+    .friend-footer .version-display {
+        color: #64748b;
+    }
+    .friend-footer .version-display:hover {
+        color: #60a5fa;
+        background: rgba(96, 165, 250, 0.15);
+    }
+}
 
 /* 暗色主题 */
 @media (prefers-color-scheme: dark) {
@@ -1026,26 +1140,16 @@ body {
     }
 
     /* 输入框区域适配 */
-    .input-area {
-        padding: 6px 10px;
-        height: 50px;
-        min-height: 50px;
+    .input-wrapper {
+        padding: 0 12px;
     }
-    .input-area input {
+    .input-wrapper input {
+        padding-left: 5px;
+        padding-right: 72px;
         font-size: 14px;
-        height: 34px;
-        padding: 6px 12px;
     }
-    .input-area .btn-send {
-        height: 34px;
-        padding: 4px 14px;
-        font-size: 14px;
-        min-width: 48px;
-    }
-    .btn-emoji {
-        width: 34px;
-        height: 34px;
-        font-size: 18px;
+    .input-wrapper .btn-emoji {
+        right: 45px;
     }
 
     /* 表情面板 */

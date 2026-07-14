@@ -2,11 +2,14 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <meta name="screen-orientation" content="portrait">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="chat-styles.css">
     <link rel="icon" type="image/svg+xml" href="../logo-title.png">
     <title>Nexus · Chat</title>
+    <!--  Version: 1.11.1  -->
 </head>
 <body>
 <div id="app">
@@ -65,7 +68,7 @@
     <div id="mainPage">
         <header id="topBar">
             <div class="brand">
-                <img src="/logo-chat.png" id="logo">
+                <img src="/logo-chat-light.png" id="logo">
             </div>
             <div class="topActions">
                 <button class="roundedBtn" id="addFriendBtn" title="添加好友">
@@ -86,6 +89,10 @@
                     <span class="badge" id="requestBadge">0</span>
                 </div>
                 <div class="list" id="friendListContainer"><div class="empty-state">加载中...</div></div>
+                <!-- 新增：好友列表底部版本号 -->
+                <div class="friend-footer">
+                    <span class="version-display" id="versionDisplay" title="点击7次有惊喜">当前版本：1.11.1</span>
+                </div>
             </div>
             <div id="chatArea">
                 <!-- 原有聊天区域，保留 chat-header -->
@@ -140,9 +147,13 @@
                     <button onclick="cancelReply()" style="background:none; border:none; cursor:pointer; font-size:18px;">✕</button>
                 </div>
                 <div class="input-area">
-                    <input type="text" id="chatInput" placeholder="输入消息..." maxlength="200" autocomplete="off" />
-                    <button class="btn-emoji" id="emojiBtn" title="选择表情">😊</button>
-                    <button class="btn-send" id="sendBtn">发送</button>
+                    <div class="input-wrapper">
+                        <input type="text" id="chatInput" placeholder="输入消息..." maxlength="200" autocomplete="off" />
+                        <button class="btn-emoji" id="emojiBtn" title="选择表情">😊</button>
+                        <button class="btn-send" id="sendBtn">
+                            <svg t="1784029523667" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19698" width="20" height="20"><path d="M139.008 86.314667c-12.586667 2.090667-24.32 7.68-33.109333 15.786666a65.493333 65.493333 0 0 0-16.384 69.973334v0.085333l121.173333 324.906667c3.541333 9.642667 3.541333 20.224 0 29.866666L89.6 851.84v0.085333a65.621333 65.621333 0 0 0 16.298667 69.973334c17.536 16.128 46.762667 22.186667 71.082666 10.453333h0.085334l767.573333-362.538667c46.208-21.802667 46.208-93.824 0-115.626666L176.938667 91.648a63.573333 63.573333 0 0 0-37.888-5.333333z m48.64 104.789333L867.328 512l-679.68 320.896 102.954667-276.224a128 128 0 0 0 0-89.344z" p-id="19699"></path><path d="M256 469.333333a42.666667 42.666667 0 0 0-42.666667 42.666667 42.666667 42.666667 0 0 0 42.666667 42.666667h682.666667a42.666667 42.666667 0 0 0 42.666666-42.666667 42.666667 42.666667 0 0 0-42.666666-42.666667z" p-id="19700"></path></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

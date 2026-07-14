@@ -41,18 +41,136 @@
     let replyToId = null;
     let heartbeatInterval = null;
     let typingTimeout = null;
+    // 彩蛋
+    let versionClickCount = 0;
+    let versionClickTimer = null;
+    let confettiActive = false;
+    let confettiAnimationId = null;
+    let confettiPieces = [];
+    let confettiCanvas = null;
+    let confettiCtx = null;
+
+    function startConfetti(duration = 5000) {
+        if (confettiActive) return;
+        // 创建 canvas
+        confettiCanvas = document.createElement('canvas');
+        confettiCanvas.style.position = 'fixed';
+        confettiCanvas.style.top = '0';
+        confettiCanvas.style.left = '0';
+        confettiCanvas.style.width = '100%';
+        confettiCanvas.style.height = '100%';
+        confettiCanvas.style.pointerEvents = 'none';
+        confettiCanvas.style.zIndex = '99999';
+        document.body.appendChild(confettiCanvas);
+
+        const ctx = confettiCanvas.getContext('2d');
+        confettiCtx = ctx;
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        confettiCanvas.width = W;
+        confettiCanvas.height = H;
+
+        // 生成粒子
+        const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#1dd1a1', '#ee5a24', '#f368e0'];
+        confettiPieces = [];
+        for (let i = 0; i < 150; i++) {
+            confettiPieces.push({
+                x: Math.random() * W,
+                y: Math.random() * H * 0.2 - H * 0.2,
+                w: Math.random() * 8 + 4,
+                h: Math.random() * 6 + 3,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                vx: (Math.random() - 0.5) * 4,
+                vy: Math.random() * 6 + 2,
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 8,
+                opacity: 1,
+            });
+        }
+
+        confettiActive = true;
+        const startTime = Date.now();
+
+        function draw() {
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= duration) {
+                stopConfetti();
+                return;
+            }
+            ctx.clearRect(0, 0, W, H);
+            for (const p of confettiPieces) {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05; // 重力
+                p.rotation += p.rotSpeed;
+                p.opacity = Math.max(0, 1 - (elapsed / duration) * 0.8);
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation * Math.PI / 180);
+                ctx.globalAlpha = p.opacity;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                ctx.restore();
+            }
+            confettiAnimationId = requestAnimationFrame(draw);
+        }
+        draw();
+
+        // 如果页面关闭或切换，清理
+        window.addEventListener('resize', function resizeHandler() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        });
+
+        // 自动停止
+        setTimeout(stopConfetti, duration + 500);
+    }
+
+    function stopConfetti() {
+        if (confettiAnimationId) {
+            cancelAnimationFrame(confettiAnimationId);
+            confettiAnimationId = null;
+        }
+        if (confettiCanvas) {
+            confettiCanvas.remove();
+            confettiCanvas = null;
+            confettiCtx = null;
+        }
+        confettiActive = false;
+        confettiPieces = [];
+    }
+    // ----
+
+    // ---- 主题与 Logo ----
+    function updateLogo() {
+        const logo = document.getElementById('logo');
+        if (!logo) return;
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        logo.src = isDark ? '/logo-chat-dark.png' : '/logo-chat-light.png';
+    }
+
+    // 监听主题变化
+    const darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+    darkModeMedia.addEventListener('change', updateLogo);
+
+    function triggerEasterEgg() {
+        if (confettiActive) return;
+        // 显示祝贺消息
+        showToast('🎉 彩蛋解锁！Nexus 1.11.1 · 你点了7次，世界欠你一个赞！', 'info');
+
+        // 启动五彩纸屑
+        startConfetti(5000);
+    }
 
     // ---- 工具 ----
     // ---- 模态框动画控制 ----
     function openModal(modalId) {
         const el = document.getElementById(modalId);
         if (!el) return;
-        if (modalId === 'requestModal') {
-            loadRequests(); // 打开时自动加载
-        }
+        // 重置状态，准备淡入
         el.classList.remove('closing', 'active');
         el.style.display = 'flex';
-        void el.offsetHeight;
+        void el.offsetHeight; // 强制重绘
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 el.classList.add('active');
@@ -63,8 +181,10 @@
     function closeModal(modalId) {
         const el = document.getElementById(modalId);
         if (!el) return;
+        // 触发淡出动画
         el.classList.remove('active');
         el.classList.add('closing');
+        // 等待动画结束后隐藏（300ms 与 CSS 过渡时间匹配）
         setTimeout(() => {
             el.style.display = 'none';
             el.classList.remove('closing');
@@ -174,14 +294,64 @@ function hideConfirm() {
             console.log('[connectWebSocket] wsUrl:', wsUrl);
             ws = new WebSocket(wsUrl);
             console.log('[connectWebSocket] WebSocket 对象已创建');
-            ws.onopen = () => {
-                // ...
+
+            ws.onopen = function() {
+                isConnecting = false;
+                debugLog('WS连接成功', 'ok');
+                // 发送认证
+                if (currentToken && currentUser) {
+                    ws.send(JSON.stringify({
+                        type: 'auth',
+                        token: currentToken,
+                        username: currentUser
+                    }));
+                }
+                if (heartbeatInterval) clearInterval(heartbeatInterval);
+                heartbeatInterval = setInterval(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
             };
-            // ... 其余事件绑定
+
+            ws.onmessage = function(ev) {
+                try {
+                    const data = JSON.parse(ev.data);
+                    console.log('[WS] 收到消息:', data);
+                    handleWsMessage(data);
+                } catch (e) {
+                    debugLog('WS解析失败: ' + e.message, 'error');
+                }
+            };
+
+            ws.onclose = function() {
+                debugLog('WS关闭', 'warn');
+                isConnecting = false;
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
+                }
+                ws = null;
+                loadFriends();
+                if (currentToken) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = setTimeout(connectWebSocket, 3000);
+                }
+            };
+
+            ws.onerror = function(err) {
+                debugLog('WS错误', 'error');
+                console.error('[WS] 错误:', err);
+                isConnecting = false;
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
+                }
+            };
+
         } catch (e) {
             console.error('[connectWebSocket] 同步错误:', e);
             isConnecting = false;
-            // 不重试，避免死循环
         }
     }
 
@@ -738,25 +908,17 @@ function hideConfirm() {
         }
         currentToken = token;
         try {
-            console.log('1. 获取 profile');
             const profile = await apiCall('/profile');
-            console.log('2. 设置 currentUser');
             currentUser = profile.profile.username;
-            console.log('3. 添加 mainPage active');
             mainPage.classList.add('active');
-            console.log('4. 加载个人资料');
+            updateLogo();
             await loadProfile();
-            console.log('5. 连接 WebSocket');
             connectWebSocket();
-            console.log('6. 加载好友');
             await loadFriends(true);
-            console.log('7. 加载申请');
             await loadRequestCount();
-            console.log('8. 启动轮询');
             startPolling();
-            console.log('9. 完成');
         } catch (e) {
-            console.error('错误发生在:', e);
+            console.error('错误:', e);
         }
     }
     async function loadProfile() {
@@ -771,6 +933,24 @@ function hideConfirm() {
     }
 
     // ---- 事件绑定 ----
+    const versionDisplay = document.getElementById('versionDisplay');
+    if (versionDisplay) {
+        versionDisplay.addEventListener('click', function(e) {
+            e.stopPropagation();
+            clearTimeout(versionClickTimer);
+            versionClickCount++;
+            // 点击反馈：轻微缩放动画（CSS已处理）
+            if (versionClickCount >= 7) {
+                versionClickCount = 0;
+                triggerEasterEgg();
+            } else {
+                // 1.5秒内未继续点击则重置
+                versionClickTimer = setTimeout(() => {
+                    versionClickCount = 0;
+                }, 1500);
+            }
+        });
+    }
     logoutBtn?.addEventListener('click', logout);
     sendBtn?.addEventListener('click', () => sendMessage(chatInput.value));
     chatInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendBtn.click(); } });
@@ -1005,10 +1185,13 @@ function hideConfirm() {
             if (res.success) {
                 showToast('资料更新成功', 'success');
                 renderFriendList();
-                document.getElementById('profileModal').classList.add('closing');
-                setTimeout(() => document.getElementById('profileModal').classList.remove('active', 'closing'), 200);
-            } else showToast('❌ ' + (res.error || '更新失败'));
-        } catch (e) { showToast('❌ 更新失败: ' + e.message); }
+                closeModal('profileModal'); // ✅ 统一关闭模态框
+            } else {
+                showToast('❌ ' + (res.error || '更新失败'));
+            }
+        } catch (e) {
+            showToast('❌ 更新失败: ' + e.message);
+        }
     });
     // 新消息按钮
     document.getElementById('newMsgBtn')?.addEventListener('click', function() {
