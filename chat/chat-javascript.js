@@ -23,6 +23,11 @@
     const fpUsername = document.getElementById('fpUsername');
     const fpNickname = document.getElementById('fpNickname');
     const fpBio = document.getElementById('fpBio');
+    const searchChatMenuItem = document.getElementById('searchChatMenuItem');
+    const searchModal = document.getElementById('searchModal');
+    const searchInput = document.getElementById('searchInput');
+    const searchResultList = document.getElementById('searchResultList');
+    const closeSearchBtn = document.getElementById('closeSearchBtn');
 
     // ---- 状态 ----
     let currentUser = null;
@@ -156,7 +161,7 @@
     function triggerEasterEgg() {
         if (confettiActive) return;
         // 显示祝贺消息
-        showToast('🎉 彩蛋解锁！Nexus 1.11.1 · 你点了7次，世界欠你一个赞！', 'info');
+        showToast('🎉 彩蛋解锁！Nexus 1.11.2 · 你点了7次，世界欠你一个赞！', 'info');
 
         // 启动五彩纸屑
         startConfetti(5000);
@@ -691,6 +696,75 @@ function hideConfirm() {
     }
     window.cancelReply = cancelReply;
 
+    // ---- 搜索聊天记录 ----
+    function performSearch(keyword) {
+        const trimmed = keyword.trim();
+        if (!trimmed) {
+            searchResultList.innerHTML = '<div class="empty-state">输入关键词开始搜索</div>';
+            return;
+        }
+        const msgs = messagesCache[currentFriend] || [];
+        if (msgs.length === 0) {
+            searchResultList.innerHTML = '<div class="empty-state">暂无聊天记录</div>';
+            return;
+        }
+        const results = msgs.filter(m => {
+            if (m.recalled) return false;
+            return m.text.toLowerCase().includes(trimmed.toLowerCase());
+        });
+        if (results.length === 0) {
+            searchResultList.innerHTML = '<div class="empty-state">未找到匹配的消息</div>';
+            return;
+        }
+        let html = '';
+        for (const msg of results) {
+            const sender = msg.fromNickname || msg.from;
+            const isMe = msg.from === currentUser;
+            const preview = msg.text.slice(0, 60);
+            html += `
+                <div class="search-result-item" data-msgid="${msg.id}" data-friend="${currentFriend}">
+                    <div class="search-result-sender">${isMe ? '我' : escapeHtml(sender)}</div>
+                    <div class="search-result-text">${escapeHtml(preview)}</div>
+                    <div class="search-result-time">${formatTime(msg.time)}</div>
+                </div>
+            `;
+        }
+        searchResultList.innerHTML = html;
+        // 绑定点击跳转事件
+        searchResultList.querySelectorAll('.search-result-item').forEach(el => {
+            el.addEventListener('click', function() {
+                const msgId = this.dataset.msgid;
+                const friend = this.dataset.friend;
+                // 关闭搜索框
+                closeModal('searchModal');
+                // 切换到对应的好友（如果当前不是）
+                if (currentFriend !== friend) {
+                    selectFriend(friend);
+                }
+                // 延迟执行跳转，确保渲染完成
+                setTimeout(() => {
+                    const target = messageBox.querySelector(`[data-id="${msgId}"]`);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        target.style.background = 'rgba(255, 215, 0, 0.4)';
+                        setTimeout(() => {
+                            target.style.background = '';
+                        }, 3000);
+                    }
+                }, 300);
+            });
+        });
+    }
+
+    // 输入框防抖
+    let searchTimer = null;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            performSearch(this.value);
+        }, 300);
+    });
+
     // ---- 发送 ----
     async function sendMessage(text) {
         if (!currentFriend) { alert('请先选择好友'); return; }
@@ -1126,6 +1200,21 @@ function hideConfirm() {
                 }
             }, true);
         }
+    });
+    searchChatMenuItem?.addEventListener('click', () => {
+        if (!currentFriend) {
+            showToast('请先选择好友再搜索', 'warn');
+            return;
+        }
+        openModal('searchModal');
+        searchInput.value = '';
+        searchResultList.innerHTML = '<div class="empty-state">输入关键词开始搜索</div>';
+        setTimeout(() => searchInput.focus(), 100);
+    });
+
+    closeSearchBtn?.addEventListener('click', () => closeModal('searchModal'));
+    searchModal?.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal('searchModal');
     });
     // 右键菜单
     if (menuRecall) {

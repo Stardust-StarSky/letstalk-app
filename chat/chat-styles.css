@@ -186,6 +186,10 @@ body {
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
+/* 未选择好友时隐藏输入区域 */
+#chatArea:not(.active) .input-area {
+    display: none;
+}
 .chat-header {
     padding: 8px 20px;
     border-bottom: 1px solid #e9edf2;
@@ -863,19 +867,37 @@ body {
 .friend-footer .version-display:active {
     transform: scale(0.95);
 }
-/* 暗色主题适配 */
-@media (prefers-color-scheme: dark) {
-    .friend-footer {
-        background: #081737;
-        border-top-color: #2a2a32;
-    }
-    .friend-footer .version-display {
-        color: #64748b;
-    }
-    .friend-footer .version-display:hover {
-        color: #60a5fa;
-        background: rgba(96, 165, 250, 0.15);
-    }
+/* 搜索结果样式 */
+.search-result-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.search-result-item:hover {
+    background: #f1f5f9;
+}
+.search-result-item .search-result-sender {
+    font-weight: 500;
+    color: #1e293b;
+    min-width: 40px;
+    font-size: 13px;
+}
+.search-result-item .search-result-text {
+    flex: 1;
+    color: #475569;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.search-result-item .search-result-time {
+    font-size: 12px;
+    color: #94a3b8;
+    flex-shrink: 0;
 }
 
 /* 暗色主题 */
@@ -903,7 +925,6 @@ body {
     .time-label { color: #64748b; }
     .input-area { background: linear-gradient(90deg, #2f2e68, #203169); border-top-color: #2a2a32; border: none; }
     .input-area input { background: #17234b; border-color: #3a3a44; color: #f1f5f9; }
-    .input-area input:focus { border-color: #3b82f6; background: #2a2a32; }
     .input-area .btn-send { background: #2563eb; }
     #emojiPanel { background: #081737 !important; border-top-color: #2a2a32 !important; }
     .btn-emoji:hover { background: #2b2b34; }
@@ -1093,6 +1114,29 @@ body {
     .roundedBtn:hover {
         background: rgba(255,255,255,0.08);
     }
+    .friend-footer {
+        background: #081737;
+        border-top-color: #2a2a32;
+    }
+    .friend-footer .version-display {
+        color: #64748b;
+    }
+    .friend-footer .version-display:hover {
+        color: #60a5fa;
+        background: rgba(96, 165, 250, 0.15);
+    }
+    .search-result-item {
+        border-bottom-color: #2a2a32;
+    }
+    .search-result-item:hover {
+        background: #2a2a32;
+    }
+    .search-result-item .search-result-sender {
+        color: #f1f5f9;
+    }
+    .search-result-item .search-result-text {
+        color: #cbd5e1;
+    }
 }
 
 /* ===== 移动端适配 ===== */
@@ -1102,6 +1146,9 @@ body {
         max-height: 100vh;
         border-radius: 0;
         box-shadow: none;
+    }
+    .topActions {
+        gap: 5px;
     }
 
     /* 好友列表占满屏幕 */
@@ -1140,14 +1187,6 @@ body {
     }
 
     /* 输入框区域适配 */
-    .input-wrapper {
-        padding: 0 12px;
-    }
-    .input-wrapper input {
-        padding-left: 5px;
-        padding-right: 72px;
-        font-size: 14px;
-    }
     .input-wrapper .btn-emoji {
         right: 45px;
     }

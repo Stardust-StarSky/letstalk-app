@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="chat-styles.css">
     <link rel="icon" type="image/svg+xml" href="../logo-title.png">
     <title>Nexus · Chat</title>
-    <!--  Version: 1.11.1  -->
+    <!--  Version: 1.11.2  -->
 </head>
 <body>
 <div id="app">
@@ -68,7 +68,7 @@
     <div id="mainPage">
         <header id="topBar">
             <div class="brand">
-                <img src="/logo-chat-light.png" id="logo">
+                <img src="/logo-chat-dark.png" id="logo">
             </div>
             <div class="topActions">
                 <button class="roundedBtn" id="addFriendBtn" title="添加好友">
@@ -91,7 +91,7 @@
                 <div class="list" id="friendListContainer"><div class="empty-state">加载中...</div></div>
                 <!-- 新增：好友列表底部版本号 -->
                 <div class="friend-footer">
-                    <span class="version-display" id="versionDisplay" title="点击7次有惊喜">当前版本：1.11.1</span>
+                    <span class="version-display" id="versionDisplay" title="点击7次有惊喜">当前版本：1.11.2</span>
                 </div>
             </div>
             <div id="chatArea">
@@ -111,6 +111,15 @@
                             <div class="side-menu-header">
                                 <span>更多操作</span>
                                 <button id="sideMenuCloseBtn">✕</button>
+                            </div>
+                            <div class="side-menu-item" id="searchChatMenuItem">
+                                <span class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"/>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    </svg>
+                                </span>
+                                <span>搜索聊天记录</span>
                             </div>
                             <div class="side-menu-item" id="clearChatMenuItem">
                                 <span class="icon">
@@ -191,6 +200,19 @@
             </div>
             <div class="btn-row" style="margin-top: 16px;">
                 <button class="btn-secondary" id="closeFriendProfileBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+    <!-- 搜索聊天记录模态框 -->
+    <div class="modal-overlay" id="searchModal">
+        <div class="modal-box" style="max-width: 500px;">
+            <h3>搜索聊天记录</h3>
+            <input type="text" id="searchInput" placeholder="输入关键词..." style="width:100%; margin-top:8px;" />
+            <div id="searchResultList" style="margin-top:12px; max-height:300px; overflow-y:auto;">
+                <div class="empty-state">输入关键词开始搜索</div>
+            </div>
+            <div class="btn-row" style="margin-top:12px;">
+                <button class="btn-secondary" id="closeSearchBtn">关闭</button>
             </div>
         </div>
     </div>
