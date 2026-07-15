@@ -221,7 +221,7 @@
     function triggerEasterEgg() {
         if (confettiActive) return;
         // 显示祝贺消息
-        showToast('🎉 彩蛋解锁！Nexus 1.11.3 · 你点了7次，世界欠你一个赞！', 'info');
+        showToast('🎉 彩蛋解锁！Nexus 1.11.3 · 万物皆有回响。', 'info');
 
         // 启动五彩纸屑
         startConfetti(5000);
@@ -1203,7 +1203,7 @@
             clearTimeout(versionClickTimer);
             versionClickCount++;
             // 点击反馈：轻微缩放动画（CSS已处理）
-            if (versionClickCount >= 7) {
+            if (versionClickCount >= 5) {
                 versionClickCount = 0;
                 triggerEasterEgg();
             } else {

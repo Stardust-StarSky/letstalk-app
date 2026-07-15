@@ -855,22 +855,6 @@ body {
     align-items: center;
 }
 
-/*彩蛋*/
-.palette-btn {
-    background: none;
-    border: none;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 4px;
-    transition: 0.15s;
-    color: var(--text-secondary, #94a3b8);
-    line-height: 1;
-}
-.palette-btn:hover {
-    background: rgba(128,128,128,0.1);
-    color: var(--accent-color, #3b82f6);
-}
 
 /* 调色板色块 */
 .color-swatch {
